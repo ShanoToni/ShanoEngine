@@ -16,6 +16,7 @@
 #include "Window.h"
 
 
+
 // WINDOW DIMENTIONS
 const GLint WIDTH = 800, HEIGHT = 600;
 const float toRadians = 3.14159265f / 180.0f;
@@ -23,6 +24,10 @@ const float toRadians = 3.14159265f / 180.0f;
 Window mainWindow;
 std::vector<Mesh*> meshList;
 std::vector<Shader> shaderList;
+
+
+GLfloat dt = 0.0f;
+GLfloat lastTime = 0.0f;
 
 
 bool direction = true;
@@ -54,14 +59,29 @@ void CreateObjects()
 		0.0f, 1.0f, 0.0f
 	};
 	
-	Mesh *obj1 = new Mesh();
-	obj1->CreateMesh(vertices, indices, 12, 12);
+	//Plane
+	Mesh *obj1 = new Mesh(Mesh::CUBE);
+	obj1->initTransform();
+	obj1->translate(vec3(0.0f, -0.3f, 15.0f));
+	obj1->scale(vec3(100.0f, 0.2f, 100.0f));
+	obj1->setShader(shaderList[0]);
 	meshList.push_back(obj1);
 
-	Mesh *obj2 = new Mesh();
-	obj2->CreateMesh(vertices, indices, 12, 12);
+	//Sphere
+	Mesh *obj2 = new Mesh(Mesh::SPHERE);
+	obj2->initTransform();
+	obj2->translate(vec3(0.0f, 10.3f, 1.0f));
+	obj2->scale(vec3(1.0f, 1.0f, 1.0f));
+	obj2->setShader(shaderList[0]);
 	meshList.push_back(obj2);
 
+	//CUBE
+	Mesh *obj3 = new Mesh(Mesh::CUBE);
+	obj3->initTransform();
+	obj3->translate(vec3(4.0f, 10.3f, 1.0f));
+	obj3->scale(vec3(1.0f, 1.0f, 1.0f));
+	obj3->setShader(shaderList[0]);
+	meshList.push_back(obj3);
 }
 
 void CreateShaders() 
@@ -80,13 +100,17 @@ int main()
 
 	//Create triangle
 
-	CreateObjects();
 	CreateShaders();
+	CreateObjects();
+	
+
+
 
 	mat4 proj = perspective(45.0f, mainWindow.GetBufferWidth()/mainWindow.GetBufferWidth(), 0.1f, 100.0f);
 	
 	GLuint uniformProjection = 0;
 	GLuint uniformModel = 0;
+	GLuint uniformView = 0;
 
 	int degree = 0;
 	float size = 0;
@@ -94,74 +118,26 @@ int main()
 	// Loop until window closed
 	while (!mainWindow.getShouldClose())
 	{
+		//handle time in seconds
+		GLfloat now = glfwGetTime();
+		dt = now - lastTime;
+		lastTime = now;
 		// get and handle user input events
 		glfwPollEvents();
 
-		//translation
-		if (direction)
-		{
-			triOffSet += triIncrement;
-		}
-		else
-		{
-			triOffSet -= triIncrement;
-		}
+		mainWindow.camera.keyControl(mainWindow.getKeys(), dt);
+		mainWindow.camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
 
-		if (abs(triOffSet) >= triMaxOffset)
-		{
-			direction = !direction;
-		}
-		//rotation
-		
-
-		if (degree < 360) 
-		{
-			degree+=1;
-		}
-		else
-		{
-			degree = 0;
-		}
-
-		if (size < 2) 
-		{
-			size+= 0.01f;
-		}
-		else
-		{
-			size = 0.4f;
-		}
 
 		// clear window
 		glClearColor(0.0f,0.0f,0.0f,1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//Draw
-		shaderList[0].UseShader();
-		uniformModel = shaderList[0].GetModelLocation();
-		uniformProjection = shaderList[0].GetProjectionLocation();
-
-		mat4 model(1.0f);
-		
-		model = translate(model, vec3(0.0f, 0.0f, -3.0f));
-		model = rotate(model, degree * toRadians, vec3(0.0f, 1.0f, 0.0f));
-		model = scale(model, vec3(0.4, 0.4, 0.4));
-
-		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, value_ptr(model));
-		glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, value_ptr(proj));
-		
-		//Draw meshes
-		meshList[0]->RenderMesh();
-
-		//new mesh
-		model = mat4(1.0f);
-		model = translate(model, vec3(0.0f, 1.0f, -3.0f));
-		model = rotate(model, -degree * toRadians, vec3(0.0f, 1.0f, 0.0f));
-		model = scale(model, vec3(0.4, 0.4, 0.4));
-		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, value_ptr(model));
-		meshList[1]->RenderMesh();
-
-		glUseProgram(0);
+		for (auto mesh : meshList)
+		{
+			mainWindow.draw(*mesh);
+		}
 
 		mainWindow.swapBuffers();
 	}
