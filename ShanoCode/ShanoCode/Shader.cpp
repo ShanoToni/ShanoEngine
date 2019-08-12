@@ -5,6 +5,8 @@ Shader::Shader()
 	shaderID = 0;
 	uniformModel = 0;
 	uniformProj = 0;
+	uniformAColor = 0;
+	uniformAIntensity = 0;
 }
 
 void Shader::CreateFromString(const char * vertexCode, const char * fragmentCode)
@@ -61,6 +63,16 @@ GLuint Shader::GetModelLocation()
 GLuint Shader::GetViewLocation()
 {
 	return uniformView;
+}
+
+GLuint Shader::GetAmbientIntensityLocation()
+{
+	return uniformAIntensity;
+}
+
+GLuint Shader::GetAmbientColorLocation()
+{
+	return uniformAColor;
 }
 
 
@@ -127,6 +139,8 @@ void Shader::CompileShader(const char * vertexCode, const char * fragmentCode)
 	uniformModel = glGetUniformLocation(shaderID, "Model");
 	uniformProj = glGetUniformLocation(shaderID, "Projection");
 	uniformView = glGetUniformLocation(shaderID, "View");
+	uniformAColor = glGetUniformLocation(shaderID, "DirectionalLight.color");
+	uniformAIntensity = glGetUniformLocation(shaderID, "DirectionalLight.ambientIntesity");
 }
 
 void Shader::AddShader(GLuint theProgram, const char * shaderCode, GLenum shaderType)
@@ -151,12 +165,18 @@ void Shader::AddShader(GLuint theProgram, const char * shaderCode, GLenum shader
 	GLchar elog[1024] = { 0 };
 
 	//validate linking of shader
-	glGetShaderiv(theShader, GL_COMPILE_STATUS, &result);
-	if (!result)
+	int infologLength = 0;
+	int charsWritten = 0;
+	char *infoLog;
+
+	glGetShaderiv(theShader, GL_INFO_LOG_LENGTH, &infologLength);
+
+	if (infologLength > 0)
 	{
-		glGetShaderInfoLog(shaderID, sizeof(elog), NULL, elog);
-		std::cout << "Error compiling the " << shaderType << " shader " << elog << std::endl;
-		return;
+		infoLog = (char *)malloc(infologLength);
+		glGetShaderInfoLog(theShader, infologLength, &charsWritten, infoLog);
+		printf("%s\n", infoLog);
+		free(infoLog);
 	}
 
 	//attach compiled shader to program

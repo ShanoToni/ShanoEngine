@@ -20,6 +20,9 @@ public:
 	void keyControl(bool * keys, GLfloat dt);
 	void mouseControl(GLfloat xChange, GLfloat yChange);
 
+	glm::vec3 getCameraPos();
+	glm::vec3 getCameraDir();
+
 	glm::mat4 calculateViewMatrix();
 
 	~Camera();

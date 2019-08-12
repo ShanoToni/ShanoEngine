@@ -1,5 +1,5 @@
 #include "Window.h"
-
+#include <sstream>
 
 using namespace glm;
 Window::Window()
@@ -11,6 +11,11 @@ Window::Window()
 	{
 		keys[i] = 0;
 	}
+
+	pointLightCount = 0;
+	spotLightCount = 0;
+	flash = false;
+	
 }
 
 Window::Window(GLint windowWidth, GLint windowHeight)
@@ -22,6 +27,9 @@ Window::Window(GLint windowWidth, GLint windowHeight)
 	{
 		keys[i] = 0;
 	}
+	pointLightCount = 0;
+	spotLightCount = 0;
+	flash = false;
 }
 
 int Window::Initialise()
@@ -64,6 +72,10 @@ int Window::Initialise()
 	//Allow modern extension features
 	glewExperimental = GL_TRUE;
 
+	//Cull faces
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
 	if (glewInit() != GLEW_OK)
 	{
 		std::cout << "GLEW broke!" << std::endl;		
@@ -74,6 +86,7 @@ int Window::Initialise()
 
 	glEnable(GL_DEPTH_TEST);
 
+
 	// Setup Viewport size
 	glViewport(0, 0, bufferWidth, bufferHeight);
 
@@ -81,10 +94,40 @@ int Window::Initialise()
 	glfwSetWindowUserPointer(mainWindow, this);
 
 	// Initialize cammera
-	camera = Camera(vec3(0.0f), vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 5.0f, 0.3f);
+	camera = Camera(vec3(0.0f), vec3(0.0f, 5.0f, 0.0f), -90.0f*toRadians, 1.0f * toRadians, 8.0f, 0.3f);
+	time = 0.5f;
+
 }
 
-void Window::draw(const Mesh & mesh)
+void Window::showFPS()
+{
+	static double previousSeconds = 0.0;
+	static int frameCount;
+	double elapsedSeconds;
+	double currentSeconds = glfwGetTime();
+
+	elapsedSeconds = currentSeconds - previousSeconds;
+
+	// limit FPS refresh rate to 4 times per second
+	if (elapsedSeconds > 0.25) {
+		previousSeconds = currentSeconds;
+		double FPS = (double)frameCount / elapsedSeconds;
+		double msPerFrame = 1000.0 / FPS;
+
+		std::ostringstream outs;
+		outs.precision(3);
+		outs << std::fixed
+			<< " ShanoEngine " << "  "
+			<< "FPS: " << FPS << "  "
+			<< "Frame time: " << msPerFrame << "ms" << std::endl;
+		glfwSetWindowTitle(mainWindow, outs.str().c_str());
+
+		frameCount = 0;
+	}
+	frameCount++;
+}
+
+void Window::draw( Mesh & mesh)
 {
 	mat4 app_view = camera.calculateViewMatrix();
 	mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 5000.0f);
@@ -95,21 +138,41 @@ void Window::draw(const Mesh & mesh)
 	GLint modelLoc = glGetUniformLocation(mesh.getShader().shaderID, "Model");
 	GLint viewLoc = glGetUniformLocation(mesh.getShader().shaderID, "View");
 	GLint projLoc = glGetUniformLocation(mesh.getShader().shaderID, "Projection");
-	//GLint rotateLoc = glGetUniformLocation(mesh.getShader().shaderID, "rotate");
-
+	GLint eyePosLoc = glGetUniformLocation(mesh.getShader().shaderID, "eyePos");
 
 	// Pass the matrices to the shader
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(mesh.getModel()));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(app_view));
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(app_projection));
-	//glUniformMatrix4fv(rotateLoc, 1, GL_FALSE, glm::value_ptr(mesh.getRotate()));
+	glUniform3f(eyePosLoc, camera.getCameraPos().x, camera.getCameraPos().y, camera.getCameraPos().z);
+
+	//get the position of the light count
+	GLint pointLightCountLoc = glGetUniformLocation(mesh.getShader().shaderID, "pointLightCount");
+	GLint spotLightCountLoc = glGetUniformLocation(mesh.getShader().shaderID, "spotLightCount");
+	// Pass the count to shader
+	glUniform1i(pointLightCountLoc, pointLightCount);
+	glUniform1i(spotLightCountLoc, spotLightCount);
+	
+
+	//PAss Materials
+	GLint specIntensityLoc = glGetUniformLocation(mesh.getShader().shaderID, "material.specIntensity");
+	GLint shininessLoc = glGetUniformLocation(mesh.getShader().shaderID, "material.shininess");
+	mesh.getMaterial().useMaterial(specIntensityLoc, shininessLoc);
+	
+	//DIRECTIONAL LIGHT
+	useDirLight(mesh);
+	//POINTLIGHTS
+	usePLight(mesh);
+	//SPOTLIGHTS
+	useSLight(mesh);
 
 
+
+	mesh.useTexture();
 	glBindVertexArray(mesh.getVertexArrayObject());
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.getIndexBuffer());
-	
+
 	glDrawElements(GL_TRIANGLES, mesh.getNumIndices(), GL_UNSIGNED_INT, 0);
-	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 }
@@ -128,6 +191,115 @@ GLfloat Window::getYChange()
 	GLfloat theChange = yChange;
 	yChange = 0;
 	return theChange;
+}
+
+void Window::useDirLight(Mesh & mesh)
+{
+	for (auto dir : directional)
+	{
+		//lights
+		GLint ambientColLoc = glGetUniformLocation(mesh.getShader().shaderID, "directionalLight.base.color");
+		GLint ambientColInensityLoc = glGetUniformLocation(mesh.getShader().shaderID, "directionalLight.base.ambientIntesity");
+		GLint diffuseDirLoc = glGetUniformLocation(mesh.getShader().shaderID, "directionalLight.direction");
+		GLint diffuseIntensityLoc = glGetUniformLocation(mesh.getShader().shaderID, "directionalLight.base.diffuseIntensity");
+		dir->useLight(ambientColInensityLoc, ambientColLoc,
+			diffuseIntensityLoc, diffuseDirLoc);
+	}
+}
+
+void Window::usePLight(Mesh & mesh)
+{
+	for (int i = 0; i < pointLightCount; i++)
+	{
+		char locBuff[100] = ("\n");
+		snprintf(locBuff, sizeof(locBuff), "PointLights[%d].base.color", i);
+		GLint ambientColLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+		snprintf(locBuff, sizeof(locBuff), "PointLights[%d].base.ambientIntesity", i);
+		GLint ambientColInensityLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+		snprintf(locBuff, sizeof(locBuff), "PointLights[%d].base.diffuseIntensity", i);
+		GLint diffuseIntensityLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+
+
+		snprintf(locBuff, sizeof(locBuff), "PointLights[%d].position", i);
+		GLint posLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+
+		snprintf(locBuff, sizeof(locBuff), "PointLights[%d].constant", i);
+		GLint constLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+		snprintf(locBuff, sizeof(locBuff), "PointLights[%d].linear", i);
+		GLint linearLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+		snprintf(locBuff, sizeof(locBuff), "PointLights[%d].exponent", i);
+		GLint exponentLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+		points.at(i)->useLight(ambientColInensityLoc, ambientColLoc, diffuseIntensityLoc, posLoc, constLoc, linearLoc, exponentLoc);
+	}
+}
+
+void Window::useSLight(Mesh & mesh)
+{
+	for (int i = 0; i < spotLightCount; i++)
+	{
+		char locBuff[100] = ("\n");
+		snprintf(locBuff, sizeof(locBuff), "SpotLights[%d].base.base.color", i);
+		GLint ambientColLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+		snprintf(locBuff, sizeof(locBuff), "SpotLights[%d].base.base.ambientIntesity", i);
+		GLint ambientColInensityLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+		snprintf(locBuff, sizeof(locBuff), "SpotLights[%d].base.base.diffuseIntensity", i);
+		GLint diffuseIntensityLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+
+
+		snprintf(locBuff, sizeof(locBuff), "SpotLights[%d].base.position", i);
+		GLint posLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+
+		snprintf(locBuff, sizeof(locBuff), "SpotLights[%d].base.constant", i);
+		GLint constLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+
+		snprintf(locBuff, sizeof(locBuff), "SpotLights[%d].base.linear", i);
+		GLint linearLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+
+		snprintf(locBuff, sizeof(locBuff), "SpotLights[%d].base.exponent", i);
+		GLint exponentLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+
+		snprintf(locBuff, sizeof(locBuff), "SpotLights[%d].direction", i);
+		GLint dirLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+
+		snprintf(locBuff, sizeof(locBuff), "SpotLights[%d].edge", i);
+		GLint edgeLoc = glGetUniformLocation(mesh.getShader().shaderID, locBuff);
+
+		spots[i]->useLight(ambientColInensityLoc, ambientColLoc, diffuseIntensityLoc,
+							posLoc, constLoc, linearLoc, exponentLoc,
+							dirLoc, edgeLoc);
+	}
+}
+
+void Window::updateFlashLight(float dt)
+{
+	if (time > .5f) 
+	{
+		if (keys[GLFW_KEY_F])
+		{
+			flash = !flash;
+			time = 0.0f;
+		}
+	}
+	else 
+	{
+		time += dt;
+		if (time > 100)
+		{
+			time = 100;
+		}
+	}
+	if (flash)
+	{
+		glm::vec3 lowerLight = camera.getCameraPos();
+		lowerLight.y -= 0.3f;
+		spots[0]->setFlash(lowerLight, camera.getCameraDir());
+		spots[0]->turnOn();
+	}
+	else
+	{
+		spots[0]->turnOff();
+	}
+	
 }
 
 Window::~Window()

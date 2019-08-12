@@ -1,11 +1,15 @@
 #pragma once
 
+
+
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 
 #include "Shader.h"
+#include "Texture.h"
+#include "Material.h"
 
 /*
 ** VERTEX CLASS
@@ -49,15 +53,17 @@ public:
 		TRIANGLE,
 		QUAD,
 		CUBE,
-		SPHERE
+		SPHERE1,
+		SPHERE2,
+		SPHERE3,
 	};
 
 	Mesh();
-	void breakDown(glm::vec3 t1, glm::vec3 t2, glm::vec3 t3, int count, std::vector<glm::vec3>& result);
-	glm::vec3 normal(glm::vec3 a, glm::vec3 b, float length);
+	void breakDown(glm::vec3 t1, glm::vec3 t2, glm::vec3 t3, int count,int limit, std::vector<glm::vec3>& result);
 	Mesh(MeshType type);
+	Mesh(std::vector<Vertex> & vertices, std::vector<glm::vec3>& normals, std::vector<glm::vec2>& texCoords, std::vector<GLuint>& indices);
 
-	void CreateMesh(Vertex *vertices, glm::vec3* normals);
+	void CreateMesh(std::vector<Vertex>& vertices, std::vector<glm::vec3>& normals, std::vector<glm::vec2>& texCoords, std::vector<GLuint>& indices);
 	void RenderMesh();
 	void ClearMesh();
 
@@ -68,10 +74,27 @@ public:
 	*/
 	glm::vec3 getPos() const { return getTranslate()[3]; }
 	glm::mat4 getModel() const { return getTranslate() * getRotate() * getScale(); }
+	
 	glm::mat4 getTranslate() const { return m_translate; }
+	void setTranslate(glm::mat4 trans) { m_translate = trans; }
+
 	glm::mat4 getRotate() const { return m_rotate; }
+	//void setRotate(glm::mat4 rot) { m_rotate = rot; }
+
 	glm::mat4 getScale() const { return m_scale; }
+	void setScale(glm::mat4 scale) { m_scale = scale; }
+
 	Shader getShader() const { return m_shader; }
+
+	//texture
+	void setTexture(const char * texLoc) { tex = Texture(texLoc); hasTex = true; }
+	Texture getTexture() { return tex; }
+	void loadTexture() { if (hasTex) { tex.loadTexture(); } }
+	void useTexture() { tex.useTexture(); }
+
+	//material 
+	void setMaterial(Material m) { mat = m; }
+	Material getMaterial() { return mat; }
 
 	// get buffers and array references
 	GLuint getVertexArrayObject() const { return VAO; }
@@ -98,6 +121,8 @@ public:
 	}
 	// set i_th coordinate of mesh center to float p (x: i=0, y: i=1, z: i=2)
 	void setPos(int i, float p) { m_translate[3][i] = p; }
+	void setMatIdx(int idx) { matIdx = idx; }
+	int getMatIdx() { return matIdx; }
 
 	// set rotation matrix
 	void setRotate(const glm::mat4 &mat) { m_rotate = mat; }
@@ -117,18 +142,24 @@ public:
 
 private:
 	//VAO-holds the information VBO-specific vertex IBO- idex of buffers
-	GLuint VAO, VBO, NBO, IBO;
+	GLuint VAO, VBO, NBO, IBO, TBO;
 	GLsizei indexCount;
+
+	int matIdx;
+	Texture tex;
+	bool hasTex;
+	Material mat;
 
 	unsigned int numIndices;
 	unsigned int numVertices;
+
+	void createNormals(std::vector<glm::vec3> & normals, std::vector<Vertex> & vertices, int numVerts);
 
 	glm::mat4 m_translate; // translation matrix
 	glm::mat4 m_rotate; // rotation matrix
 	glm::mat4 m_scale; // scale matrix
 
 	std::vector<Vertex> m_vertices; // mesh vertices (without duplication)
-	std::vector<GLuint> indices;
 	Shader m_shader; // shader
 };
 
