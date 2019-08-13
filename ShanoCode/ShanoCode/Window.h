@@ -63,6 +63,11 @@ public:
 	void setScreenQuad(Mesh * quad) { screenQuad = quad; }
 	void drawScreenQuad();
 
+	//SKYBOX
+	void setSkyMesh(Mesh * mesh) { skycube = mesh; }
+	void setSkyBoxShader(Shader * shade) { skyBoxShader = shade; }
+	void drawSkyBox();
+
 	void swapBuffers() {glfwSwapBuffers(mainWindow);}
 
 	~Window();
@@ -72,23 +77,32 @@ public:
 	Framebuffer fb;
 private:
 	GLFWwindow *mainWindow;
+
 	//Meshes
 	std::vector<Mesh*> meshes;
+
 	//directional light
 	std::vector<DirectionalLight*> directional;
+
 	//point light
 	std::vector<PointLight*> points;
 	int pointLightCount;
+
 	//spotlight
 	std::vector<SpotLight*> spots;
 	int spotLightCount;
 	bool flash;
 	float flashTime;
+
 	//Framebuffer
 	Shader * frameshader;
 	Mesh * screenQuad;
 	int toggler;
 	float toggleTime;
+
+	//SKYBOX
+	Mesh * skycube;
+	Shader * skyBoxShader;
 
 	GLint width, height;
 	GLint bufferWidth, bufferHeight;

@@ -297,7 +297,112 @@ Mesh::Mesh(MeshType type)
 			indices.push_back(i);
 		}
 
+
 		break;
+
+		case SKYBOX:
+			// create cube
+
+			//back face
+			vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, -1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, 1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, -1.0f)));
+
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+			texCoords.push_back(glm::vec2(1.0f, 0.0f));
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(0.0f, 1.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+
+			//front
+			vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, -1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, 1.0f, 1.0f)));
+
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+			texCoords.push_back(glm::vec2(0.0f, 1.0f));
+
+			//bottom
+			vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, -1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, -1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, -1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, 1.0f)));
+
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+			texCoords.push_back(glm::vec2(0.0f, 1.0f));
+
+			//top
+			vertices.push_back(Vertex(glm::vec3(-1.0f, 1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, 1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, 1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, 1.0f)));
+
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+			texCoords.push_back(glm::vec2(1.0f, 0.0f));
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(0.0f, 1.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+
+			////left
+			vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, 1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, 1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(-1.0f, 1.0f, 1.0f)));
+
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+			texCoords.push_back(glm::vec2(0.0f, 1.0f));
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+
+			//right
+			vertices.push_back(Vertex(glm::vec3(1.0f, -1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, -1.0f, -1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, 1.0f)));
+			vertices.push_back(Vertex(glm::vec3(1.0f, -1.0f, 1.0f)));
+
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(0.0f, 1.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+			texCoords.push_back(glm::vec2(0.0f, 0.0f));
+			texCoords.push_back(glm::vec2(1.0f, 1.0f));
+			texCoords.push_back(glm::vec2(1.0f, 0.0f));
+
+			// number of vertices
+			numVertices = vertices.size();
+			numIndices = vertices.size();
+			createNormals(normals, vertices, numVertices);
+			for (int i = 0; i < vertices.size(); i++)
+			{
+				indices.push_back(i);
+			}
+			break;
+
 	case SPHERE1:
 		
 		limit = 1;

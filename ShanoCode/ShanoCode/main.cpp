@@ -59,6 +59,12 @@ static const char* sVShader = "Shaders/screen.vert";
 //Frag Shader
 static const char* sFShader = "Shaders/screen.frag";
 
+//SKYBOX SHADERS
+//vertex Shader
+static const char* sbVShader = "Shaders/skybox.vert";
+//Frag Shader
+static const char* sbFShader = "Shaders/skybox.frag";
+
 void CreateObjects()
 {
 	Mesh * screen = new Mesh();
@@ -100,6 +106,29 @@ void CreateObjects()
 	
 }
 
+void CreateSkybox() 
+{
+	//FRONT BACK TOP BOTTOM RIGHT LEFT !!!!!
+	std::vector<std::string> faces;
+	faces.push_back("Textures/skybox/front.tga");
+	faces.push_back("Textures/skybox/back.tga");
+	faces.push_back("Textures/skybox/top.tga");
+	faces.push_back("Textures/skybox/bottom.tga");
+	faces.push_back("Textures/skybox/right.tga");
+	faces.push_back("Textures/skybox/left.tga");
+
+	Mesh * skycube = new Mesh(Mesh::SKYBOX);
+	skycube->setTexture(faces);
+
+	mainWindow.setSkyMesh(skycube);
+
+	Shader * skyboxShader = new Shader();
+	skyboxShader->CreateFromFiles(sbVShader,sbFShader);
+	mainWindow.setSkyBoxShader(skyboxShader);
+
+
+}
+
 void CreateShaders() 
 {
 	Shader *shader1 = new Shader();
@@ -119,10 +148,9 @@ int main()
 	mainWindow = Window(1366, 768);
 	mainWindow.Initialise();
 
+	//-------------------SCENE SETUP-------------------------
 	CreateShaders();
-
-
-	
+	CreateSkybox();
 	CreateObjects();
 
 	
@@ -186,9 +214,6 @@ int main()
 
 		//Draw meshes
 		mainWindow.draw();
-
-		//RENDER SCREEN QUAD
-		mainWindow.drawScreenQuad();
 
 		mainWindow.swapBuffers();
 	}

@@ -53,6 +53,7 @@ public:
 		TRIANGLE,
 		QUAD,
 		CUBE,
+		SKYBOX,
 		SPHERE1,
 		SPHERE2,
 		SPHERE3,
@@ -88,6 +89,7 @@ public:
 
 	//texture
 	void setTexture(const char * texLoc) { tex = Texture(texLoc); hasTex = true; }
+	void setTexture(std::vector<std::string> faces) { tex = Texture(faces); hasTex = true; }
 	Texture getTexture() { return tex; }
 	void loadTexture() { if (hasTex) { tex.loadTexture(); } }
 	void useTexture() { tex.useTexture(); }

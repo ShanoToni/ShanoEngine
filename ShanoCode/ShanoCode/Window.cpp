@@ -80,9 +80,6 @@ int Window::Initialise()
 		return 1;
 	}
 
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-
 	// Setup Viewport size
 	glViewport(0, 0, bufferWidth, bufferHeight);
 
@@ -133,6 +130,10 @@ void Window::draw()
 {
 	
 	fb.drawToBuffer();
+
+	//Draw skybox before rest of geometry
+	drawSkyBox();
+
 	for (auto mesh : meshes)
 	{
 		mat4 app_view = camera.calculateViewMatrix();
@@ -182,6 +183,7 @@ void Window::draw()
 		glBindVertexArray(0);
 	}
 
+	drawScreenQuad();
 }
 
 GLfloat Window::getXChange()
@@ -347,6 +349,31 @@ void Window::drawScreenQuad()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
+}
+
+void Window::drawSkyBox()
+{
+	mat4 app_view = glm::mat4(glm::mat3(camera.calculateViewMatrix()));
+	mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 1000.0f);
+
+	glDepthMask(GL_FALSE);
+	skyBoxShader->UseShader();
+
+	GLint viewLoc = glGetUniformLocation(skyBoxShader->shaderID, "view");
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(app_view));
+
+	GLint projLoc = glGetUniformLocation(skyBoxShader->shaderID, "projection");
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(app_projection));
+
+	glBindVertexArray(skycube->getVertexArrayObject());
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skycube->getTexture().getSkyBoxID());
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skycube->getIndexBuffer());
+
+	glDrawElements(GL_TRIANGLES, skycube->getNumIndices(), GL_UNSIGNED_INT, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glDepthMask(GL_TRUE);
 }
 
 Window::~Window()
