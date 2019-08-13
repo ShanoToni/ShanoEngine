@@ -155,7 +155,12 @@ void main()
 	final += CalcPointLights();
 	final += CalcSpotLights();
 
-	color = texture(tex, TexCoord) * final;
-
+	float near = 0.1;
+	float far = 1000f;
+	float z = gl_FragCoord.z * 2.0-1.0f;
+	float res = (2.0 * near * far) / (far + near - z * (far - near));
+	//color = texture(tex, TexCoord) * final;
+	res = res / (far/ 10);
+	color = texture(tex, TexCoord) * final * vec4(vec3(1-res), 1.0);
 }
 											

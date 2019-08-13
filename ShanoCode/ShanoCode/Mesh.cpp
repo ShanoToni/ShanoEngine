@@ -5,36 +5,40 @@ Mesh::Mesh()
 	std::vector<GLuint> indices;
 	//create triangle vertices
 	std::vector<Vertex> vertices;
-	
-	vertices.push_back(Vertex(glm::vec3(-1.0, -1.0, 0.0)));
-	vertices.push_back(Vertex(glm::vec3(0, 1.0, 0.0)));
-	vertices.push_back(Vertex(glm::vec3(1.0, -1.0, 0.0)));
-	
-
-	// tirangle normals
 	std::vector<glm::vec3> normals;
-		normals.push_back(glm::vec3(.0f, .0f, 1.0f));
-		normals.push_back(glm::vec3(.0f, .0f, 1.0f));
-		normals.push_back(glm::vec3(.0f, .0f, 1.0f));
+	
+	vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, 0.0f)));
+	vertices.push_back(Vertex(glm::vec3(1.0f, -1.0f, 0.0f)));
+	vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, 0.0f)));
+	vertices.push_back(Vertex(glm::vec3(-1.0f, -1.0f, 0.0f)));
+	vertices.push_back(Vertex(glm::vec3(1.0f, 1.0f, 0.0f)));
+	vertices.push_back(Vertex(glm::vec3(-1.0f, 1.0f, 0.0f)));
 
 	std::vector<glm::vec2> texCoords;
-	
-	 texCoords.push_back(glm::vec2(1.0f, 0.0f));
-	 texCoords.push_back(glm::vec2(0.5f, 1.0f));
-	 texCoords.push_back(glm::vec2(0.0f, 0.0f));
+
+	texCoords.push_back(glm::vec2(0.0f, 0.0f));
+	texCoords.push_back(glm::vec2(1.0f, 0.0f));
+	texCoords.push_back(glm::vec2(1.0f, 1.0f));
+	texCoords.push_back(glm::vec2(0.0f, 0.0f));
+	texCoords.push_back(glm::vec2(1.0f, 1.0f));
+	texCoords.push_back(glm::vec2(0.0f, 1.0f));
 
 	// create vertex vector without duplicates (easy for a triangle)
 	m_vertices = std::vector<Vertex>(std::begin(vertices), std::end(vertices));
 
 	// number of vertices
-	numIndices = 3;
-	indexCount = 3;
-	numVertices = 3;
+	numIndices = 6;
+	indexCount = 6;
+	numVertices = 6;
 
 	//indices
-	indices.push_back(1);
 	indices.push_back(0);
+	indices.push_back(1);
 	indices.push_back(2);
+	indices.push_back(3);
+	indices.push_back(4);
+	indices.push_back(5);
+
 
 	tex = Texture();
 	hasTex = false;
@@ -442,10 +446,17 @@ void Mesh::CreateMesh(std::vector<Vertex>& vertices, std::vector<glm::vec3>& nor
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
 
-	// Create NBO
-	glGenBuffers(1, &NBO);
-	glBindBuffer(GL_ARRAY_BUFFER, NBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(normals[0]) * normals.size(), &normals[0], GL_STATIC_DRAW);
+	if (normals.size() > 0)
+	{
+		// Create NBO
+		glGenBuffers(1, &NBO);
+		glBindBuffer(GL_ARRAY_BUFFER, NBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(normals[0]) * normals.size(), &normals[0], GL_STATIC_DRAW);
+		// normals
+		glEnableVertexAttribArray(2);
+		glBindBuffer(GL_ARRAY_BUFFER, NBO);
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	}
 
 	//Create TBO 
 	if (texCoords.size()>0) 
@@ -466,10 +477,7 @@ void Mesh::CreateMesh(std::vector<Vertex>& vertices, std::vector<glm::vec3>& nor
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	// normals
-	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, NBO);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	
 
 	
 

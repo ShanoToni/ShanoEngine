@@ -94,7 +94,7 @@ void Shader::ClearShader()
 
 Shader::~Shader()
 {
-	ClearShader();
+	//ClearShader();
 }
 
 //privates

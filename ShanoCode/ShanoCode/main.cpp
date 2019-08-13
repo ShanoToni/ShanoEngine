@@ -47,13 +47,22 @@ GLfloat lastTime = 0.0f;
 using namespace::std;
 using namespace::glm;
 
+//SCENE SHADER
 //vertex Shader
 static const char* vShader = "Shaders/shader.vert";
 //Frag Shader
 static const char* fShader = "Shaders/shader.frag";
 
+//SCREENQUAD SHADER
+//vertex Shader
+static const char* sVShader = "Shaders/screen.vert";
+//Frag Shader
+static const char* sFShader = "Shaders/screen.frag";
+
 void CreateObjects()
 {
+	Mesh * screen = new Mesh();
+	mainWindow.setScreenQuad(screen);
 
 	//Plane
 	Mesh *obj1 = new Mesh(Mesh::CUBE);
@@ -69,7 +78,7 @@ void CreateObjects()
 
 	obj1->setShader(shaderList[0]);
 
-	meshList.push_back(obj1);
+	mainWindow.addMesh(obj1);
 
 
 	//Sphere
@@ -86,7 +95,7 @@ void CreateObjects()
 	obj2->setTexture("Textures/mars.jpg");
 	obj2->loadTexture();
 
-	meshList.push_back(obj2);
+	mainWindow.addMesh(obj2);
 
 	
 }
@@ -96,6 +105,11 @@ void CreateShaders()
 	Shader *shader1 = new Shader();
 	shader1->CreateFromFiles(vShader, fShader);
 	shaderList.push_back(*shader1);
+
+	Shader *shader2 = new Shader();
+	shader2->CreateFromFiles(sVShader, sFShader);
+	mainWindow.setScreenShader(shader2);
+	
 	
 }
 int main()
@@ -136,14 +150,17 @@ int main()
 									0.5f, 0.3f, 0.2f,
 									0.0f, -1.0f, 0.0f, 30.0f));  /* Direction xyz Edge */
 
-	for (int i = 1; i < 10; i++)
+	for (int i = 1; i < 10; i++) 
 	{
 		Model * mod1 = new Model();
 		mod1->loadModel("Models/lowpolytree.obj");
 		mod1->translate(vec3(-5.0f, 5.0f, -10.0f * i));
 		//mod1->scale(glm::vec3(0.01, 0.01, 0.01));
 		mod1->addShader(shaderList[0]);
-		modelList.push_back(mod1);
+		for (auto mesh : mod1->getMeshes())
+		{
+			mainWindow.addMesh(mesh);
+		}
 	}
 	
 
@@ -157,31 +174,21 @@ int main()
 		// get and handle user input events
 		glfwPollEvents();
 		mainWindow.showFPS();
-		mainWindow.updateFlashLight(dt);
+		mainWindow.update(dt);
 		
 
 		mainWindow.camera.keyControl(mainWindow.getKeys(), dt);
 		mainWindow.camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
+	
 
-
-		// clear window
-		glClearColor(0.1f,0.0f,0.0f,1.0f);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//Draw meshes
-		for (auto mesh : meshList)
-		{
-			mainWindow.draw(*mesh);
-		}
-		for (auto mod : modelList)
-		{
-			for (auto mesh : mod->getMeshes())
-			{
-				mainWindow.draw(*mesh);
-			}
-		}
-		
+		mainWindow.draw();
 
+		//RENDER SCREEN QUAD
+		mainWindow.drawScreenQuad();
 
 		mainWindow.swapBuffers();
 	}

@@ -16,6 +16,7 @@
 #include "DirectionalLight.h"
 #include "PointLight.h"
 #include "SpotLight.h"
+#include "Framebuffer.h"
 
 constexpr int MAX_POINT_LIGHTS = 10;
 constexpr int MAX_SPOT_LIGHTS = 10;
@@ -30,11 +31,15 @@ public:
 	int Initialise();
 	void showFPS();
 
-	void draw(Mesh & mesh);
+	//ADD MESHES
+	void addMesh(Mesh * mesh) { meshes.push_back(mesh); }
+	//DRAW MESHES
+	void draw();
 
 	GLfloat GetBufferWidth() { return bufferWidth; }
 	GLfloat GetGufferHeight() { return bufferHeight; }
 
+	//CONTROLS
 	bool getShouldClose() { return glfwWindowShouldClose(mainWindow); }
 
 	bool* getKeys() { return keys; }
@@ -42,6 +47,7 @@ public:
 	GLfloat getXChange();
 	GLfloat getYChange();
 
+	//LIGHTS
 	void addLight(DirectionalLight *light) { directional.push_back(light); }
 	void addPLight(PointLight * light) { if (pointLightCount < MAX_POINT_LIGHTS) { points.push_back(light); pointLightCount++; } }
 	void addSLight(SpotLight * light) { if (spotLightCount < MAX_SPOT_LIGHTS) { spots.push_back(light); spotLightCount++; } }
@@ -50,7 +56,12 @@ public:
 	void usePLight(Mesh & mesh);
 	void useSLight(Mesh & mesh);
 
-	void updateFlashLight(float dt);
+	void update(float dt);
+
+	//FRAMEBUFFER
+	void setScreenShader(Shader * screen) { frameshader = screen; }
+	void setScreenQuad(Mesh * quad) { screenQuad = quad; }
+	void drawScreenQuad();
 
 	void swapBuffers() {glfwSwapBuffers(mainWindow);}
 
@@ -58,16 +69,26 @@ public:
 
 	Camera camera;
 
+	Framebuffer fb;
 private:
 	GLFWwindow *mainWindow;
+	//Meshes
+	std::vector<Mesh*> meshes;
+	//directional light
 	std::vector<DirectionalLight*> directional;
+	//point light
 	std::vector<PointLight*> points;
 	int pointLightCount;
-
+	//spotlight
 	std::vector<SpotLight*> spots;
 	int spotLightCount;
 	bool flash;
-	float time;
+	float flashTime;
+	//Framebuffer
+	Shader * frameshader;
+	Mesh * screenQuad;
+	int toggler;
+	float toggleTime;
 
 	GLint width, height;
 	GLint bufferWidth, bufferHeight;

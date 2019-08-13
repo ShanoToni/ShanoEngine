@@ -71,11 +71,7 @@ int Window::Initialise()
 
 	//Allow modern extension features
 	glewExperimental = GL_TRUE;
-
-	//Cull faces
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-
+	
 	if (glewInit() != GLEW_OK)
 	{
 		std::cout << "GLEW broke!" << std::endl;		
@@ -84,8 +80,8 @@ int Window::Initialise()
 		return 1;
 	}
 
-	glEnable(GL_DEPTH_TEST);
-
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 
 	// Setup Viewport size
 	glViewport(0, 0, bufferWidth, bufferHeight);
@@ -95,7 +91,13 @@ int Window::Initialise()
 
 	// Initialize cammera
 	camera = Camera(vec3(0.0f), vec3(0.0f, 5.0f, 0.0f), -90.0f*toRadians, 1.0f * toRadians, 8.0f, 0.3f);
-	time = 0.5f;
+	flashTime = 0.5f;
+	toggleTime = 0.5f;
+
+	//Set framebuffer
+	fb = Framebuffer();
+	fb.initFB();
+	toggler = 0;
 
 }
 
@@ -127,57 +129,60 @@ void Window::showFPS()
 	frameCount++;
 }
 
-void Window::draw( Mesh & mesh)
+void Window::draw()
 {
-	mat4 app_view = camera.calculateViewMatrix();
-	mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 5000.0f);
-	mesh.getShader().UseShader();
-	// view and projection matrices
+	
+	fb.drawToBuffer();
+	for (auto mesh : meshes)
+	{
+		mat4 app_view = camera.calculateViewMatrix();
+		mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 1000.0f);
+		mesh->getShader().UseShader();
+		// view and projection matrices
 
-	// Get the uniform locations for MVP
-	GLint modelLoc = glGetUniformLocation(mesh.getShader().shaderID, "Model");
-	GLint viewLoc = glGetUniformLocation(mesh.getShader().shaderID, "View");
-	GLint projLoc = glGetUniformLocation(mesh.getShader().shaderID, "Projection");
-	GLint eyePosLoc = glGetUniformLocation(mesh.getShader().shaderID, "eyePos");
+		// Get the uniform locations for MVP
+		GLint modelLoc = glGetUniformLocation(mesh->getShader().shaderID, "Model");
+		GLint viewLoc = glGetUniformLocation(mesh->getShader().shaderID, "View");
+		GLint projLoc = glGetUniformLocation(mesh->getShader().shaderID, "Projection");
+		GLint eyePosLoc = glGetUniformLocation(mesh->getShader().shaderID, "eyePos");
 
-	// Pass the matrices to the shader
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(mesh.getModel()));
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(app_view));
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(app_projection));
-	glUniform3f(eyePosLoc, camera.getCameraPos().x, camera.getCameraPos().y, camera.getCameraPos().z);
+		// Pass the matrices to the shader
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(mesh->getModel()));
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(app_view));
+		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(app_projection));
+		glUniform3f(eyePosLoc, camera.getCameraPos().x, camera.getCameraPos().y, camera.getCameraPos().z);
 
-	//get the position of the light count
-	GLint pointLightCountLoc = glGetUniformLocation(mesh.getShader().shaderID, "pointLightCount");
-	GLint spotLightCountLoc = glGetUniformLocation(mesh.getShader().shaderID, "spotLightCount");
-	// Pass the count to shader
-	glUniform1i(pointLightCountLoc, pointLightCount);
-	glUniform1i(spotLightCountLoc, spotLightCount);
+		//get the position of the light count
+		GLint pointLightCountLoc = glGetUniformLocation(mesh->getShader().shaderID, "pointLightCount");
+		GLint spotLightCountLoc = glGetUniformLocation(mesh->getShader().shaderID, "spotLightCount");
+		// Pass the count to shader
+		glUniform1i(pointLightCountLoc, pointLightCount);
+		glUniform1i(spotLightCountLoc, spotLightCount);
 	
 
-	//PAss Materials
-	GLint specIntensityLoc = glGetUniformLocation(mesh.getShader().shaderID, "material.specIntensity");
-	GLint shininessLoc = glGetUniformLocation(mesh.getShader().shaderID, "material.shininess");
-	mesh.getMaterial().useMaterial(specIntensityLoc, shininessLoc);
+		//PAss Materials
+		GLint specIntensityLoc = glGetUniformLocation(mesh->getShader().shaderID, "material.specIntensity");
+		GLint shininessLoc = glGetUniformLocation(mesh->getShader().shaderID, "material.shininess");
+		mesh->getMaterial().useMaterial(specIntensityLoc, shininessLoc);
 	
-	//DIRECTIONAL LIGHT
-	useDirLight(mesh);
-	//POINTLIGHTS
-	usePLight(mesh);
-	//SPOTLIGHTS
-	useSLight(mesh);
+		//DIRECTIONAL LIGHT
+		useDirLight(*mesh);
+		//POINTLIGHTS
+		usePLight(*mesh);
+		//SPOTLIGHTS
+		useSLight(*mesh);
 
 
+		mesh->useTexture();
+		glBindVertexArray(mesh->getVertexArrayObject());
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->getIndexBuffer());
 
-	mesh.useTexture();
-	glBindVertexArray(mesh.getVertexArrayObject());
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.getIndexBuffer());
+		glDrawElements(GL_TRIANGLES, mesh->getNumIndices(), GL_UNSIGNED_INT, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+	}
 
-	glDrawElements(GL_TRIANGLES, mesh.getNumIndices(), GL_UNSIGNED_INT, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 }
-
-
 
 GLfloat Window::getXChange()
 {
@@ -270,22 +275,23 @@ void Window::useSLight(Mesh & mesh)
 	}
 }
 
-void Window::updateFlashLight(float dt)
+void Window::update(float dt)
 {
-	if (time > .5f) 
+	//FLASHLIGHT CONTROLS
+	if (flashTime > .5f) 
 	{
 		if (keys[GLFW_KEY_F])
 		{
 			flash = !flash;
-			time = 0.0f;
+			flashTime = 0.0f;
 		}
 	}
 	else 
 	{
-		time += dt;
-		if (time > 100)
+		flashTime += dt;
+		if (flashTime > 100)
 		{
-			time = 100;
+			flashTime = 100;
 		}
 	}
 	if (flash)
@@ -299,7 +305,48 @@ void Window::updateFlashLight(float dt)
 	{
 		spots[0]->turnOff();
 	}
+
+	if (toggleTime > .5f)
+	{
+		if (keys[GLFW_KEY_Q])
+		{
+			toggler++;
+			toggleTime = 0.0f;
+			if (toggler > 5)
+			{
+				toggler = 0;
+			}
+		}
+	}
+	else
+	{
+		toggleTime += dt;
+		if (toggleTime > 100)
+		{
+			toggleTime = 100;
+		}
+	}
 	
+}
+
+void Window::drawScreenQuad()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	frameshader->UseShader();
+
+	GLuint toggleLoc = glGetUniformLocation(frameshader->shaderID, "toggle");
+	glUniform1i(toggleLoc, toggler);
+	//get the position of the light count
+	glBindVertexArray(screenQuad->getVertexArrayObject());
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, screenQuad->getIndexBuffer());
+	fb.useBuffer();
+	glDrawElements(GL_TRIANGLES, screenQuad->getNumIndices(), GL_UNSIGNED_INT, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
 }
 
 Window::~Window()
