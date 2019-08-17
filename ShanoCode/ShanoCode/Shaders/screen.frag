@@ -98,7 +98,7 @@ void main()
 	else
 	{
 		// float depthValue = texture(tex, TexCoord).r;
-    	// FragColor = vec4(vec3(depthValue), 1.0);
+    	//  FragColor = vec4(vec3(depthValue), 1.0);
 		FragColor = texture(tex, TexCoord);
 	}
 	

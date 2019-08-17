@@ -40,6 +40,7 @@ DirectionalLight mainLight;
 //Texture list
 std::vector<Texture*> texList;
 
+Model * mod1;
 
 //Time
 GLfloat dt = 0.0f;
@@ -170,7 +171,7 @@ void CreateObjects()
 	Mesh *obj5 = new Mesh(Mesh::CUBE);
 
 	obj5->initTransform();
-	obj5->translate(vec3(16.0f, 8.3f, -12.0f));
+	obj5->translate(vec3(13.0f, 8.3f, -12.0f));
 	obj5->scale(vec3(2.0f, 2.0f, 2.0f));
 
 	obj5->setMaterial(Material(1.0f, 32));
@@ -178,25 +179,22 @@ void CreateObjects()
 	obj5->setShader(shaderList[1]);
 
 	obj5->setTexture("Textures/brick.jpg");
-	obj5->setNormalMap("Textures/brickn.jpg");
+	obj5->setNormalMap("Textures/bricknor.jpg");
 
 	obj5->loadTexture();
 	obj5->loadMap();
 	mainWindow.addMesh(obj5);
 
 
-	for (int i = 1; i < 10; i++)
-	{
-		Model * mod1 = new Model();
+		mod1 = new Model();
 		mod1->loadModel("Models/lowpolytree.obj");
-		mod1->translate(vec3(-5.0f, 5.0f, -10.0f * i));
+		mod1->translate(vec3(-5.0f, 5.0f, -8.0f ));
 		mod1->scale(glm::vec3(2.0, 2.0, 2.0));
 		mod1->addShader(shaderList[0]);
 		for (auto mesh : mod1->getMeshes())
 		{
 			mainWindow.addMesh(mesh);
 		}
-	}
 
 	
 }
@@ -264,7 +262,7 @@ int main()
 	
 	glm::vec3 dir = glm::normalize(glm::vec3(-50, -50, -50));
 	mainLight = DirectionalLight(1.0f,1.0f,1.0f,0.01f,
-					dir.x, dir.y, dir.z, 0.5f);
+					dir.x, dir.y, dir.z, 0.1f);
 
 	mainWindow.addLight(&mainLight);
 
@@ -273,7 +271,7 @@ int main()
 									-10.0f, 20.0f, 0.0f,	/* Location xyz*/
 									0.2f, 0.1f, 0.1f));		/* Const Lin Exp*/
 
-	mainWindow.addPLight(&PointLight(0.0f, 1.0f, 0.0f,
+	mainWindow.addPLight(&PointLight(1.0f, 1.0f, 1.0f,
 								0.02f, 40.0f,
 								10.0f, 15.0f, 0.0f,
 								0.3f, 0.2f, 0.1f));
@@ -287,7 +285,9 @@ int main()
 									0.0f, -1.0f, 0.0f, 30.0f));  /* Direction xyz Edge */
 
 
-	
+	float offset = 0.02;
+	float count = 0;
+	int dirs = 1;
 
 	// Loop until window closed
 	while (!mainWindow.getShouldClose())
@@ -300,7 +300,16 @@ int main()
 		glfwPollEvents();
 		mainWindow.showFPS();
 		mainWindow.update(dt);
-		
+
+		count += dt;
+
+		if (count > 6.0)
+		{
+			dirs = -dirs;
+			count = 0;
+		}
+
+		mod1->translate(glm::vec3(offset * dirs, 0, 0));
 
 		mainWindow.camera.keyControl(mainWindow.getKeys(), dt);
 		mainWindow.camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
