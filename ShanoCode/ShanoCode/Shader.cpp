@@ -50,30 +50,6 @@ std::string Shader::ReadFile(const char * fileLocation)
 	return content;
 }
 
-GLuint Shader::GetProjectionLocation()
-{
-	return uniformProj;
-}
-
-GLuint Shader::GetModelLocation()
-{
-	return uniformModel;
-}
-
-GLuint Shader::GetViewLocation()
-{
-	return uniformView;
-}
-
-GLuint Shader::GetAmbientIntensityLocation()
-{
-	return uniformAIntensity;
-}
-
-GLuint Shader::GetAmbientColorLocation()
-{
-	return uniformAColor;
-}
 
 
 void Shader::UseShader()
@@ -88,8 +64,7 @@ void Shader::ClearShader()
 		glDeleteProgram(shaderID);
 		shaderID = 0;
 	}
-	uniformModel = 0;
-	uniformProj = 0;
+
 }
 
 Shader::~Shader()
@@ -136,11 +111,7 @@ void Shader::CompileShader(const char * vertexCode, const char * fragmentCode)
 		return;
 	}
 
-	uniformModel = glGetUniformLocation(shaderID, "Model");
-	uniformProj = glGetUniformLocation(shaderID, "Projection");
-	uniformView = glGetUniformLocation(shaderID, "View");
-	uniformAColor = glGetUniformLocation(shaderID, "DirectionalLight.color");
-	uniformAIntensity = glGetUniformLocation(shaderID, "DirectionalLight.ambientIntesity");
+
 }
 
 void Shader::AddShader(GLuint theProgram, const char * shaderCode, GLenum shaderType)

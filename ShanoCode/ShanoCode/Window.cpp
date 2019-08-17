@@ -71,6 +71,8 @@ int Window::Initialise()
 
 	//Allow modern extension features
 	glewExperimental = GL_TRUE;
+
+	
 	
 	if (glewInit() != GLEW_OK)
 	{
@@ -95,6 +97,13 @@ int Window::Initialise()
 	fb = Framebuffer();
 	fb.initFB();
 	toggler = 0;
+
+	//Set Shadow Buffer
+	shadowBuffer = Framebuffer();
+	shadowBuffer.setWidthHeight(1024, 1024);
+	shadowBuffer.initDB();
+
+	glEnable(GL_MULTISAMPLE);
 
 }
 
@@ -128,16 +137,39 @@ void Window::showFPS()
 
 void Window::draw()
 {
-	
+	shadowBuffer.drawShadow();
+	drawShadows();
+
+	//choose to draw to framebuffer
 	fb.drawToBuffer();
 
 	//Draw skybox before rest of geometry
 	drawSkyBox();
+	//shadows
+	//Draw scene
+	drawScene();
+
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	drawScreenQuad();
+}
+
+void Window::drawScene()
+{
+	mat4 app_view = camera.calculateViewMatrix();
+	mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 1000.0f);
+
+	float near_plane = 0.1f, far_plane = 520.0f;
+	glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
+
+	glm::vec3 lightPos = glm::vec3(directional.at(0)->getPos());
+	glm::mat4 lightView = glm::lookAt(lightPos,		//position
+		glm::vec3(0.0f, 0.0f, 0.0f),									//center
+		glm::vec3(0.0f, 1.0f, 0.0f));									//up
+
+	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
 	for (auto mesh : meshes)
 	{
-		mat4 app_view = camera.calculateViewMatrix();
-		mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 1000.0f);
 		mesh->getShader().UseShader();
 		// view and projection matrices
 
@@ -146,6 +178,7 @@ void Window::draw()
 		GLint viewLoc = glGetUniformLocation(mesh->getShader().shaderID, "View");
 		GLint projLoc = glGetUniformLocation(mesh->getShader().shaderID, "Projection");
 		GLint eyePosLoc = glGetUniformLocation(mesh->getShader().shaderID, "eyePos");
+		
 
 		// Pass the matrices to the shader
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(mesh->getModel()));
@@ -159,13 +192,16 @@ void Window::draw()
 		// Pass the count to shader
 		glUniform1i(pointLightCountLoc, pointLightCount);
 		glUniform1i(spotLightCountLoc, spotLightCount);
-	
+
+		//Light shadow transform
+		GLint lightSpaceMatLoc = glGetUniformLocation(mesh->getShader().shaderID, "lightSpaceMatrix");
+		glUniformMatrix4fv(lightSpaceMatLoc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
 
 		//PAss Materials
 		GLint specIntensityLoc = glGetUniformLocation(mesh->getShader().shaderID, "material.specIntensity");
 		GLint shininessLoc = glGetUniformLocation(mesh->getShader().shaderID, "material.shininess");
 		mesh->getMaterial().useMaterial(specIntensityLoc, shininessLoc);
-	
+
 		//DIRECTIONAL LIGHT
 		useDirLight(*mesh);
 		//POINTLIGHTS
@@ -173,8 +209,18 @@ void Window::draw()
 		//SPOTLIGHTS
 		useSLight(*mesh);
 
+		//TEXTURES
 
-		mesh->useTexture();
+		//Setup regular texture
+		GLint texLoc = glGetUniformLocation(mesh->getShader().shaderID, "tex");
+		mesh->useTexture(0, texLoc);
+		glUniform1i(texLoc, 0);
+
+		//Shadow Texture setup
+		GLint shadowLoc = glGetUniformLocation(mesh->getShader().shaderID, "shadow");
+		shadowBuffer.useShadow(1, shadowLoc);
+		glUniform1i(shadowLoc, 1);
+
 		glBindVertexArray(mesh->getVertexArrayObject());
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->getIndexBuffer());
 
@@ -182,8 +228,6 @@ void Window::draw()
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	}
-
-	drawScreenQuad();
 }
 
 GLfloat Window::getXChange()
@@ -333,8 +377,9 @@ void Window::update(float dt)
 
 void Window::drawScreenQuad()
 {
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	frameshader->UseShader();
@@ -368,12 +413,54 @@ void Window::drawSkyBox()
 	glBindVertexArray(skycube->getVertexArrayObject());
 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skycube->getTexture().getSkyBoxID());
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skycube->getIndexBuffer());
 
 	glDrawElements(GL_TRIANGLES, skycube->getNumIndices(), GL_UNSIGNED_INT, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	glDepthMask(GL_TRUE);
+}
+
+void Window::drawShadows()
+{
+	glEnable(GL_DEPTH_TEST);
+	glCullFace(GL_FRONT);
+	/* clear depth attachment */
+	glViewport(0, 0, 4048, 4048);
+	float near_plane = 0.1f, far_plane = 520.0f;
+
+	mat4 app_view = camera.calculateViewMatrix();
+	mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 1000.0f);
+
+	glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
+	
+	glm::vec3 lightPos = glm::vec3(directional.at(0)->getPos());
+	glm::mat4 lightView = glm::lookAt(lightPos,		//position
+		glm::vec3(0.0f, 0.0f, 0.0f),									//center
+		glm::vec3(0.0f, 1.0f, 0.0f));									//up
+
+	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+	shadowShader->UseShader();
+
+	for (auto mesh : meshes)
+	{
+		// Get the uniform locations for MVP
+		GLint modelLoc = glGetUniformLocation(shadowShader->shaderID, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(mesh->getModel()));
+		GLint lightSpaceMatLoc = glGetUniformLocation(shadowShader->shaderID, "lightSpaceMatrix");
+		glUniformMatrix4fv(lightSpaceMatLoc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+
+		glBindVertexArray(mesh->getVertexArrayObject());
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->getIndexBuffer());
+
+		glDrawElements(GL_TRIANGLES, mesh->getNumIndices(), GL_UNSIGNED_INT, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+	}
+	glViewport(0, 0, bufferWidth, bufferHeight);
+	glCullFace(GL_BACK);
 }
 
 Window::~Window()

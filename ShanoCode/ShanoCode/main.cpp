@@ -65,6 +65,13 @@ static const char* sbVShader = "Shaders/skybox.vert";
 //Frag Shader
 static const char* sbFShader = "Shaders/skybox.frag";
 
+//SHADOW SHADERS
+//vertex Shader
+static const char* shVShader = "Shaders/shadow.vert";
+//Frag Shader
+static const char* shFShader = "Shaders/shadow.frag";
+
+
 void CreateObjects()
 {
 	Mesh * screen = new Mesh();
@@ -74,13 +81,13 @@ void CreateObjects()
 	Mesh *obj1 = new Mesh(Mesh::CUBE);
 	
 	obj1->initTransform();
-	obj1->setTexture("Textures/plane.jpg");
+	obj1->setTexture("Textures/brick.jpg");
 	obj1->loadTexture();
 
 	obj1->translate(vec3(0.0f, -0.3f, 15.0f));
 	obj1->scale(vec3(100.0f, 0.2f, 100.0f));
 
-	obj1->setMaterial(Material(.3f, 8));
+	obj1->setMaterial(Material(.1f, 4));
 
 	obj1->setShader(shaderList[0]);
 
@@ -103,12 +110,41 @@ void CreateObjects()
 
 	mainWindow.addMesh(obj2);
 
+	//Sphere 2
+	Mesh *obj3 = new Mesh(Mesh::SPHERE3);
+
+	obj3->initTransform();
+	obj3->translate(vec3(-8.0f, 8.3f, -12.0f));
+	obj3->scale(vec3(2.0f, 2.0f, 2.0f));
+
+	obj3->setMaterial(Material(1.0f, 32));
+
+	obj3->setShader(shaderList[0]);
+
+	obj3->setTexture("Textures/mars.jpg");
+	obj3->loadTexture();
+
+	mainWindow.addMesh(obj3);
+
+	for (int i = 1; i < 10; i++)
+	{
+		Model * mod1 = new Model();
+		mod1->loadModel("Models/lowpolytree.obj");
+		mod1->translate(vec3(-5.0f, 5.0f, -10.0f * i));
+		mod1->scale(glm::vec3(2.0, 2.0, 2.0));
+		mod1->addShader(shaderList[0]);
+		for (auto mesh : mod1->getMeshes())
+		{
+			mainWindow.addMesh(mesh);
+		}
+	}
+
 	
 }
 
 void CreateSkybox() 
 {
-	//FRONT BACK TOP BOTTOM RIGHT LEFT !!!!!
+
 	std::vector<std::string> faces;
 	faces.push_back("Textures/skybox/front.tga");
 	faces.push_back("Textures/skybox/back.tga");
@@ -138,6 +174,10 @@ void CreateShaders()
 	Shader *shader2 = new Shader();
 	shader2->CreateFromFiles(sVShader, sFShader);
 	mainWindow.setScreenShader(shader2);
+
+	Shader *shader3 = new Shader();
+	shader3->CreateFromFiles(shVShader, shFShader);
+	mainWindow.setShadowShader(shader3);
 	
 	
 }
@@ -154,42 +194,31 @@ int main()
 	CreateObjects();
 
 	
-	
-	mainLight = DirectionalLight(1.0f,1.0f,1.0f,0.1f,
-					0.3f, -1.0f, 0.0f, 0.6f);
+	glm::vec3 dir = glm::normalize(glm::vec3(-50, -50, -50));
+	mainLight = DirectionalLight(1.0f,1.0f,1.0f,0.001f,
+					dir.x, dir.y, dir.z, 0.5f);
 
 	mainWindow.addLight(&mainLight);
 
 	mainWindow.addPLight(&PointLight(1.0f, 0.0f, 0.0f,		/* R G B*/
-									0.2f, 12.0f,				/*ambientIntensity diffuseIntensity */
+									0.02f, 3.0f,				/*ambientIntensity diffuseIntensity */
 									-10.0f, 10.0f, 0.0f,	/* Location xyz*/
 									0.2f, 0.1f, 0.1f));		/* Const Lin Exp*/
 
 	mainWindow.addPLight(&PointLight(0.0f, 1.0f, 0.0f,
-								0.2f, 16.0f,
+								0.02f, 4.0f,
 								10.0f, 10.0f, 0.0f,
 								0.3f, 0.2f, 0.1f));
 
 	//Flashlight MANDITORY same list as the rest of the spot lights easier to render
 	
 	mainWindow.addSLight(&SpotLight(1.0f, 1.0f, 1.0f,
-									0.2f, 40.0f,
+									0.2f, 20.0f,
 									0.0f, 10.0f, 10.0f,
 									0.5f, 0.3f, 0.2f,
 									0.0f, -1.0f, 0.0f, 30.0f));  /* Direction xyz Edge */
 
-	for (int i = 1; i < 10; i++) 
-	{
-		Model * mod1 = new Model();
-		mod1->loadModel("Models/lowpolytree.obj");
-		mod1->translate(vec3(-5.0f, 5.0f, -10.0f * i));
-		//mod1->scale(glm::vec3(0.01, 0.01, 0.01));
-		mod1->addShader(shaderList[0]);
-		for (auto mesh : mod1->getMeshes())
-		{
-			mainWindow.addMesh(mesh);
-		}
-	}
+
 	
 
 	// Loop until window closed

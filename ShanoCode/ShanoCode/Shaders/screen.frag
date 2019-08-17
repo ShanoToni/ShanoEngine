@@ -28,7 +28,7 @@ void main()
 	//Color invers
 	if(toggle==1)
 	{
-		FragColor = vec4(vec3( 1.0f - texture(tex, TexCoord)), 1.0f);
+		FragColor = pow(vec4(vec3( 1.0f - texture(tex, TexCoord)), 1.0f), vec4(2.2));
 	} 
 	//GREYSCALE
 	else if(toggle == 2)
@@ -97,6 +97,8 @@ void main()
 	//REGULAR
 	else
 	{
+		// float depthValue = texture(tex, TexCoord).r;
+    	// FragColor = vec4(vec3(depthValue), 1.0);
 		FragColor = texture(tex, TexCoord);
 	}
 	

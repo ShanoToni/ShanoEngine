@@ -17,7 +17,7 @@ public:
 
 	bool loadTexture();
 	const char* getFileLoc() { return fileLocation; }
-	void useTexture();
+	void useTexture(int i, GLint texLoc);
 	void clearTexture();
 	//get the skybox id
 	GLuint getSkyBoxID() { return textureID; }

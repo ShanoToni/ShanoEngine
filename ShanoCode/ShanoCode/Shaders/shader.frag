@@ -6,6 +6,7 @@ in vec4 vCol;
 in vec2 TexCoord;
 in vec3 normal;
 in vec3 FragPos;
+in vec4 DirLightSpacePos;
 
 const int MAX_POINT_LIGHT = 10;
 const int MAX_SPOT_LIGHT = 10;
@@ -53,12 +54,33 @@ uniform DirectionalLight directionalLight;
 uniform PointLight PointLights[MAX_POINT_LIGHT];
 uniform SpotLight SpotLights[MAX_SPOT_LIGHT];
 
-uniform sampler2D tex ;
+uniform sampler2D tex;
+uniform sampler2D shadow;
+
 uniform Material material;
+
 uniform vec3 eyePos;
 
+
+float CalcDirectionalShadowFactor(DirectionalLight light)
+{
+	vec3 projCoords = DirLightSpacePos.xyz / DirLightSpacePos.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(shadow, projCoords.xy).r; 
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+    // check whether current frag pos is in shadow
+	float bias = 0.005;
+    float shadows = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+	if(projCoords.z > 1.0)
+			shadows = 0.0;
+    return shadows;
+}
+
 //Name explains it
-vec4 CalcLightByDirection(Light light, vec3 direction)
+vec4 CalcLightByDirection(Light light, vec3 direction, float shadowFactor)
 {
 	vec4 ambientColor = vec4(light.color, 1.0f) * light.ambientIntesity;
 	//base off of the angle of the light towards a surface
@@ -84,7 +106,7 @@ vec4 CalcLightByDirection(Light light, vec3 direction)
 		}
 	}
 
-	return (ambientColor + diffuseColor + specularColor);
+	return (ambientColor + (1.0 - shadowFactor) * (diffuseColor + specularColor));
 }
 //Name explains it
 vec4 CalcPointLight(PointLight pLight)
@@ -93,7 +115,7 @@ vec4 CalcPointLight(PointLight pLight)
 		float distance = length(direction);
 		direction = normalize(direction);
 
-		vec4 color = CalcLightByDirection(pLight.base, direction);
+		vec4 color = CalcLightByDirection(pLight.base, direction , 0.0f);
 		float attenuation = pLight.exponent * distance * distance +
 							pLight.linear * distance + 
 							pLight.constant;
@@ -125,7 +147,8 @@ vec4 CalcSpotLight(SpotLight sLight)
 //Use the functions and get the lights
 vec4 CalcDirectionalLight()
 {
-	return CalcLightByDirection(directionalLight.base, directionalLight.direction);
+	float shadowFactor = CalcDirectionalShadowFactor(directionalLight);
+	return CalcLightByDirection(directionalLight.base, directionalLight.direction, shadowFactor);
 }
 
 vec4  CalcPointLights()
@@ -155,12 +178,6 @@ void main()
 	final += CalcPointLights();
 	final += CalcSpotLights();
 
-	float near = 0.1;
-	float far = 1000f;
-	float z = gl_FragCoord.z * 2.0-1.0f;
-	float res = (2.0 * near * far) / (far + near - z * (far - near));
-	//color = texture(tex, TexCoord) * final;
-	res = res / (far/ 10);
-	color = texture(tex, TexCoord) * final * vec4(vec3(1-res), 1.0);
+	color = texture(tex, TexCoord) * final;
 }
 											

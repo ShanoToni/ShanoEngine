@@ -87,9 +87,9 @@ bool Texture::loadTexture()
 
 }
 
-void Texture::useTexture()
+void Texture::useTexture(int i, GLint texLoc)
 {
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE0 + i);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 }
 

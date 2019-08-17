@@ -92,7 +92,7 @@ public:
 	void setTexture(std::vector<std::string> faces) { tex = Texture(faces); hasTex = true; }
 	Texture getTexture() { return tex; }
 	void loadTexture() { if (hasTex) { tex.loadTexture(); } }
-	void useTexture() { tex.useTexture(); }
+	void useTexture(int i, GLint texLoc) { tex.useTexture(i, texLoc); }
 
 	//material 
 	void setMaterial(Material m) { mat = m; }

@@ -35,6 +35,7 @@ public:
 	void addMesh(Mesh * mesh) { meshes.push_back(mesh); }
 	//DRAW MESHES
 	void draw();
+	void drawScene();
 
 	GLfloat GetBufferWidth() { return bufferWidth; }
 	GLfloat GetGufferHeight() { return bufferHeight; }
@@ -68,13 +69,16 @@ public:
 	void setSkyBoxShader(Shader * shade) { skyBoxShader = shade; }
 	void drawSkyBox();
 
+
+	//SHADOWS
+	void setShadowShader(Shader * shader) { shadowShader = shader; }
+	void drawShadows();
 	void swapBuffers() {glfwSwapBuffers(mainWindow);}
 
 	~Window();
 
 	Camera camera;
 
-	Framebuffer fb;
 private:
 	GLFWwindow *mainWindow;
 
@@ -95,6 +99,7 @@ private:
 	float flashTime;
 
 	//Framebuffer
+	Framebuffer fb;
 	Shader * frameshader;
 	Mesh * screenQuad;
 	int toggler;
@@ -103,6 +108,11 @@ private:
 	//SKYBOX
 	Mesh * skycube;
 	Shader * skyBoxShader;
+
+	//Directional Shadow 
+	Framebuffer shadowBuffer;
+	Shader * shadowShader;
+
 
 	GLint width, height;
 	GLint bufferWidth, bufferHeight;
