@@ -71,6 +71,12 @@ void Framebuffer::useShadow(int i, GLint shadowLoc)
 	glBindTexture(GL_TEXTURE_2D, sceneTex);
 }
 
+void Framebuffer::useOmniShadow(int i, GLint shadowLoc)
+{
+	glActiveTexture(GL_TEXTURE0 + i);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, sceneTex);
+}
+
 void Framebuffer::drawShadow()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
@@ -106,6 +112,41 @@ void Framebuffer::initDB()
 
 	FBO = depthMapFBO;
 	sceneTex = depthMap;
+}
+
+void Framebuffer::init3DDB()
+{
+	unsigned int depthMapFBO;
+	//create Framebuffer on the GPU
+	glGenFramebuffers(1, &depthMapFBO);
+	const unsigned int SHADOW_WIDTH = 4048, SHADOW_HEIGHT = 4048;
+	
+	//create a texture 
+	unsigned int depthCubemap;
+	glGenTextures(1, &depthCubemap);
+	//bind it
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	for (unsigned int i = 0; i < 6; ++i)
+	{
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
+			SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	}
+	//set parameters
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	//Bind texture to FB
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	FBO = depthMapFBO;
+	sceneTex = depthCubemap;
+
 }
 
 Framebuffer::~Framebuffer()

@@ -13,6 +13,8 @@ public:
 	void useLight(GLuint ambientIntensityLocation, GLuint ambientColorLocation,
 		GLuint diffuseIntensityLocation, GLuint positionLocation,
 		GLuint constantLocation, GLuint linearLocation, GLuint exponentLocation);
+
+	glm::vec3 getPos() { return position; }
 	~PointLight();
 
 protected:

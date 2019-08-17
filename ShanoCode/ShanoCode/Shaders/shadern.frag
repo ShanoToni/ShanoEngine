@@ -64,6 +64,14 @@ uniform Material material;
 uniform vec3 eyePos;
 uniform float far_plane;
 
+vec3 n;
+
+void getNormal()
+{
+	n = texture(normalM, TexCoord).rgb;
+    // transform normal vector to range [-1,1]
+    n = normalize(n * 2.0 - 1.0);
+}
 
 float shadowCalc(vec3 pos, int i)
 {
@@ -103,7 +111,7 @@ vec4 CalcLightByDirection(Light light, vec3 direction, float shadowFactor)
 	vec4 ambientColor = vec4(light.color, 1.0f) * light.ambientIntesity;
 	//base off of the angle of the light towards a surface
 	vec3 fix = vec3(-direction.x, -direction.y, -direction.z);
-	float diffuseFactor = 0.2f *  max(dot(normalize(normal), normalize(fix)), 0.0f) ;
+	float diffuseFactor = 0.2f *  max(dot(normalize(n), normalize(fix)), 0.0f) ;
 	//diffuse
 	vec3 diffCol = light.color * light.diffuseIntensity * diffuseFactor;
 	vec4 diffuseColor = vec4(diffCol, 1.0f);
@@ -113,7 +121,7 @@ vec4 CalcLightByDirection(Light light, vec3 direction, float shadowFactor)
 	if(diffuseFactor > 0.0f)
 	{
 		vec3 fragToEye = normalize(eyePos - FragPos);
-		vec3 reflectedVert = normalize(reflect(direction, normalize(normal)));
+		vec3 reflectedVert = normalize(reflect(direction, normalize(n)));
 
 		float specFactor = dot(fragToEye, reflectedVert);
 
@@ -194,6 +202,8 @@ vec4 CalcSpotLights()
 }
 void main()
 {
+	
+	getNormal();
 	vec4 final = CalcDirectionalLight();
 	final += CalcPointLights();
 	final += CalcSpotLights();

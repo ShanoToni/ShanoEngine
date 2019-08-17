@@ -13,11 +13,16 @@ public:
 	void useBuffer();
 	void drawToBuffer();
 	void useShadow(int i, GLint shadowLoc);
+	void useOmniShadow(int i, GLint shadowLoc);
 	void drawShadow();
-	//depth buffer
+	//depth buffer 2D
 	inline void setWidthHeight(GLuint width, GLuint height) { w = width; h = height; }
 	void initDB();
+	//depth Buffer 3D
+	void init3DDB();
+
 	~Framebuffer();
+
 
 private:
 	//framebuffer id on GPU

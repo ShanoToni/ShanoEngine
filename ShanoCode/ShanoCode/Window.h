@@ -18,8 +18,8 @@
 #include "SpotLight.h"
 #include "Framebuffer.h"
 
-constexpr int MAX_POINT_LIGHTS = 10;
-constexpr int MAX_SPOT_LIGHTS = 10;
+constexpr int MAX_POINT_LIGHTS = 8;
+constexpr int MAX_SPOT_LIGHTS = 3;
 const float toRadians = 3.14159265f / 180.0f;
 
 class Window
@@ -71,8 +71,12 @@ public:
 
 
 	//SHADOWS
+	//directional
 	void setShadowShader(Shader * shader) { shadowShader = shader; }
 	void drawShadows();
+	//poit shadows OMNI DIRECTIONAL FTW
+	void setOmniShader(Shader * shader) { omniShader = shader ; }
+	void drawOmniShadows();
 	void swapBuffers() {glfwSwapBuffers(mainWindow);}
 
 	~Window();
@@ -113,6 +117,9 @@ private:
 	Framebuffer shadowBuffer;
 	Shader * shadowShader;
 
+	//OmniDirectional Shadows
+	Framebuffer omniBuffers[MAX_POINT_LIGHTS+MAX_SPOT_LIGHTS];
+	Shader * omniShader;
 
 	GLint width, height;
 	GLint bufferWidth, bufferHeight;

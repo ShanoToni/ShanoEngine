@@ -89,10 +89,16 @@ public:
 
 	//texture
 	void setTexture(const char * texLoc) { tex = Texture(texLoc); hasTex = true; }
+	void setTexture(Texture t) { tex = t; hasTex = true;}
+	//set normal map
+	void setNormalMap(const char * texLoc) { normalM = Texture(texLoc); }
+	//set cubemap
 	void setTexture(std::vector<std::string> faces) { tex = Texture(faces); hasTex = true; }
 	Texture getTexture() { return tex; }
 	void loadTexture() { if (hasTex) { tex.loadTexture(); } }
+	void loadMap() { if (hasTex) { normalM.loadTexture(); } }
 	void useTexture(int i, GLint texLoc) { tex.useTexture(i, texLoc); }
+	void useNormalMap(int i, GLint texLoc) { normalM.useTexture(i, texLoc); }
 
 	//material 
 	void setMaterial(Material m) { mat = m; }
@@ -149,6 +155,7 @@ private:
 
 	int matIdx;
 	Texture tex;
+	Texture normalM;
 	bool hasTex;
 	Material mat;
 

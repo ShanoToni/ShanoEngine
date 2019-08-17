@@ -477,7 +477,7 @@ Mesh::Mesh(MeshType type)
 		break;
 
 		case SPHERE3:
-			limit = 4;
+			limit = 5;
 		
 			//TOP
 			//front

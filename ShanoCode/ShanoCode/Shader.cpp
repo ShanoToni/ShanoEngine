@@ -2,11 +2,7 @@
 
 Shader::Shader()
 {
-	shaderID = 0;
-	uniformModel = 0;
-	uniformProj = 0;
-	uniformAColor = 0;
-	uniformAIntensity = 0;
+
 }
 
 void Shader::CreateFromString(const char * vertexCode, const char * fragmentCode)
@@ -26,6 +22,20 @@ void Shader::CreateFromFiles(const char * vertexLocation, const char * fragmentL
 	CompileShader(vertexCode, fragmentCode);
 
 }
+
+void Shader::CreateFromFiles(const char * vertexLocation, const char * geometryLocation, const char * fragmentLocation)
+{
+	std::string vertexString = ReadFile(vertexLocation);
+	std::string geomString = ReadFile(geometryLocation);
+	std::string fragmentString = ReadFile(fragmentLocation);
+
+	const char* vertexCode = vertexString.c_str();
+	const char* geometryCode = geomString.c_str();
+	const char* fragmentCode = fragmentString.c_str();
+
+	CompileShader(vertexCode, geometryCode, fragmentCode);
+}
+
 
 std::string Shader::ReadFile(const char * fileLocation)
 {
@@ -48,6 +58,15 @@ std::string Shader::ReadFile(const char * fileLocation)
 	filestream.close();
 
 	return content;
+}
+
+void Shader::addGeomShader(const char * fileLocation)
+{
+	std::string geomString = ReadFile(fileLocation);
+
+	const char* geomCode = geomString.c_str();
+
+	AddShader(shaderID, geomCode, GL_GEOMETRY_SHADER);
 }
 
 
@@ -84,6 +103,48 @@ void Shader::CompileShader(const char * vertexCode, const char * fragmentCode)
 
 	//add the shaders to the shader program
 	AddShader(shaderID, vertexCode, GL_VERTEX_SHADER);
+	AddShader(shaderID, fragmentCode, GL_FRAGMENT_SHADER);
+
+	//error handle
+	GLint result = 0;
+	GLchar elog[1024] = { 0 };
+
+	glLinkProgram(shaderID);
+
+	//validate linking of shader
+	glGetProgramiv(shaderID, GL_LINK_STATUS, &result);
+	if (!result)
+	{
+		glGetProgramInfoLog(shaderID, sizeof(elog), NULL, elog);
+		std::cout << "Error linking Program " << elog << std::endl;
+		return;
+	}
+	//validate program
+	glValidateProgram(shaderID);
+	// check validation
+	glGetProgramiv(shaderID, GL_VALIDATE_STATUS, &result);
+	if (!result)
+	{
+		glGetProgramInfoLog(shaderID, sizeof(elog), NULL, elog);
+		std::cout << "Error validating Program " << elog << std::endl;
+		return;
+	}
+
+
+}
+
+void Shader::CompileShader(const char * vertexCode, const char * geometryCode, const char * fragmentCode)
+{
+	shaderID = glCreateProgram();
+
+	if (!shaderID) {
+		std::cout << "Error Creating Shader Program" << std::endl;
+		return;
+	}
+
+	//add the shaders to the shader program
+	AddShader(shaderID, vertexCode, GL_VERTEX_SHADER);
+	AddShader(shaderID, geometryCode, GL_GEOMETRY_SHADER);
 	AddShader(shaderID, fragmentCode, GL_FRAGMENT_SHADER);
 
 	//error handle

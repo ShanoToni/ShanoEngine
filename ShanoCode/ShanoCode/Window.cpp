@@ -102,6 +102,12 @@ int Window::Initialise()
 	shadowBuffer = Framebuffer();
 	shadowBuffer.setWidthHeight(1024, 1024);
 	shadowBuffer.initDB();
+	//Set Omni Shadow Buffer
+	for (int i = 0; i < MAX_POINT_LIGHTS + MAX_SPOT_LIGHTS; i++)
+	{
+		omniBuffers[i] = Framebuffer();
+		omniBuffers[i].init3DDB();
+	}
 
 	glEnable(GL_MULTISAMPLE);
 
@@ -137,15 +143,20 @@ void Window::showFPS()
 
 void Window::draw()
 {
+	//shadows
+
+	drawOmniShadows();
+
+
 	shadowBuffer.drawShadow();
 	drawShadows();
 
+	
 	//choose to draw to framebuffer
 	fb.drawToBuffer();
 
 	//Draw skybox before rest of geometry
 	drawSkyBox();
-	//shadows
 	//Draw scene
 	drawScene();
 
@@ -197,6 +208,10 @@ void Window::drawScene()
 		GLint lightSpaceMatLoc = glGetUniformLocation(mesh->getShader().shaderID, "lightSpaceMatrix");
 		glUniformMatrix4fv(lightSpaceMatLoc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
 
+		//far plane uniform
+		GLint farPlaneLoc = glGetUniformLocation(mesh->getShader().shaderID, "far_plane");
+		glUniform1f(farPlaneLoc, far_plane);
+
 		//PAss Materials
 		GLint specIntensityLoc = glGetUniformLocation(mesh->getShader().shaderID, "material.specIntensity");
 		GLint shininessLoc = glGetUniformLocation(mesh->getShader().shaderID, "material.shininess");
@@ -213,13 +228,119 @@ void Window::drawScene()
 
 		//Setup regular texture
 		GLint texLoc = glGetUniformLocation(mesh->getShader().shaderID, "tex");
-		mesh->useTexture(0, texLoc);
-		glUniform1i(texLoc, 0);
+		mesh->useTexture(22, texLoc);
+		glUniform1i(texLoc, 22);
+		//normal map
+		GLint normalMLoc = glGetUniformLocation(mesh->getShader().shaderID, "normalM");
+		mesh->useNormalMap(21, normalMLoc);
+		glUniform1i(normalMLoc, 21);
 
 		//Shadow Texture setup
 		GLint shadowLoc = glGetUniformLocation(mesh->getShader().shaderID, "shadow");
 		shadowBuffer.useShadow(1, shadowLoc);
 		glUniform1i(shadowLoc, 1);
+
+		//Shadow Cubemap setup
+		for (int i = 0; i < pointLightCount; i++)
+		{
+			std::string str = "shadowCube[" + std::to_string(i) + "]";
+			GLint shadowCubeLoc = glGetUniformLocation(mesh->getShader().shaderID, str.c_str());
+			omniBuffers[i].useOmniShadow(2 + i, shadowCubeLoc);
+			glUniform1i(shadowCubeLoc, 2+i);
+		}
+		for (int i = MAX_POINT_LIGHTS; i < MAX_POINT_LIGHTS + spotLightCount; i++)
+		{
+			std::string str = "shadowCube[" + std::to_string(i) + "]";
+			GLint shadowCubeLoc = glGetUniformLocation(mesh->getShader().shaderID, str.c_str());
+			omniBuffers[i].useOmniShadow(2 + i, shadowCubeLoc);
+			glUniform1i(shadowCubeLoc, 2+i);
+		}
+		
+
+
+		glBindVertexArray(mesh->getVertexArrayObject());
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->getIndexBuffer());
+
+		glDrawElements(GL_TRIANGLES, mesh->getNumIndices(), GL_UNSIGNED_INT, 0);
+		
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+	}
+}
+
+void Window::drawScreenQuad()
+{
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	frameshader->UseShader();
+
+	GLuint toggleLoc = glGetUniformLocation(frameshader->shaderID, "toggle");
+	glUniform1i(toggleLoc, toggler);
+	//get the position of the light count
+	glBindVertexArray(screenQuad->getVertexArrayObject());
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, screenQuad->getIndexBuffer());
+	fb.useBuffer();
+	glDrawElements(GL_TRIANGLES, screenQuad->getNumIndices(), GL_UNSIGNED_INT, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+}
+
+void Window::drawSkyBox()
+{
+	mat4 app_view = glm::mat4(glm::mat3(camera.calculateViewMatrix()));
+	mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 1000.0f);
+
+	glDepthMask(GL_FALSE);
+	skyBoxShader->UseShader();
+
+	GLint viewLoc = glGetUniformLocation(skyBoxShader->shaderID, "view");
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(app_view));
+
+	GLint projLoc = glGetUniformLocation(skyBoxShader->shaderID, "projection");
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(app_projection));
+
+	glBindVertexArray(skycube->getVertexArrayObject());
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skycube->getTexture().getSkyBoxID());
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skycube->getIndexBuffer());
+
+	glDrawElements(GL_TRIANGLES, skycube->getNumIndices(), GL_UNSIGNED_INT, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glDepthMask(GL_TRUE);
+}
+
+void Window::drawShadows()
+{
+	glEnable(GL_DEPTH_TEST);
+	glCullFace(GL_FRONT);
+	/* clear depth attachment */
+	glViewport(0, 0, 4048, 4048);
+	float near_plane = 0.1f, far_plane = 520.0f;
+
+	glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
+	
+	glm::vec3 lightPos = glm::vec3(directional.at(0)->getPos());
+	glm::mat4 lightView = glm::lookAt(lightPos,		//position
+		glm::vec3(0.0f, 0.0f, 0.0f),									//center
+		glm::vec3(0.0f, 1.0f, 0.0f));									//up
+
+	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+	shadowShader->UseShader();
+
+	for (auto mesh : meshes)
+	{
+		// Get the uniform locations for MVP
+		GLint modelLoc = glGetUniformLocation(shadowShader->shaderID, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(mesh->getModel()));
+		GLint lightSpaceMatLoc = glGetUniformLocation(shadowShader->shaderID, "lightSpaceMatrix");
+		glUniformMatrix4fv(lightSpaceMatLoc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
 
 		glBindVertexArray(mesh->getVertexArrayObject());
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->getIndexBuffer());
@@ -228,6 +349,136 @@ void Window::drawScene()
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	}
+	glViewport(0, 0, bufferWidth, bufferHeight);
+	glCullFace(GL_BACK);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+}
+
+void Window::drawOmniShadows()
+{
+	for (int i = 0; i < pointLightCount; i++)
+	{
+		omniBuffers[i].drawShadow();
+		glEnable(GL_DEPTH_TEST);
+		glCullFace(GL_FRONT);
+		/* clear depth attachment */
+		glViewport(0, 0, 4048, 4048);
+		float near_plane = 0.1f, far_plane = 520.0f;
+		float aspect = (float)4048.0f / (float)4048.0f;
+
+		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plane, far_plane);
+		glm::vec3 lightPos = points.at(i)->getPos();
+
+		std::vector<glm::mat4> shadowTransforms;
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+
+		omniShader->UseShader();
+
+		//send the cubemap depths
+		for (unsigned int i = 0; i < 6; ++i)
+		{	
+			GLint shadowMatLoc = glGetUniformLocation(omniShader->shaderID, ("shadowMatrices[" + std::to_string(i) + "]").c_str());
+			glUniformMatrix4fv(shadowMatLoc, 1, GL_FALSE, glm::value_ptr(shadowTransforms.at(i)));
+		}
+	
+		//far plane uniform
+		GLint farPlaneLoc = glGetUniformLocation(omniShader->shaderID, "far_plane");
+		glUniform1f(farPlaneLoc, far_plane);
+
+		GLint lightPosLoc = glGetUniformLocation(omniShader->shaderID, "lightPos");
+		glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
+
+		for (auto mesh : meshes)
+		{
+			// Get the uniform locations for MVP
+			GLint modelLoc = glGetUniformLocation(omniShader->shaderID, "model");
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(mesh->getModel()));
+		
+
+			glBindVertexArray(mesh->getVertexArrayObject());
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->getIndexBuffer());
+
+			glDrawElements(GL_TRIANGLES, mesh->getNumIndices(), GL_UNSIGNED_INT, 0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			glBindVertexArray(0);
+		}
+		glViewport(0, 0, bufferWidth, bufferHeight);
+		glCullFace(GL_BACK);
+	}
+
+	for (int i = MAX_POINT_LIGHTS; i < MAX_POINT_LIGHTS + spotLightCount; i++)
+	{
+		omniBuffers[i].drawShadow();
+		glEnable(GL_DEPTH_TEST);
+		glCullFace(GL_FRONT);
+		/* clear depth attachment */
+		glViewport(0, 0, 4048, 4048);
+		float near_plane = 0.1f, far_plane = 520.0f;
+		float aspect = (float)4048.0f / (float)4048.0f;
+
+		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plane, far_plane);
+		glm::vec3 lightPos = spots.at(i - MAX_POINT_LIGHTS)->getPos();
+
+		std::vector<glm::mat4> shadowTransforms;
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+		shadowTransforms.push_back(shadowProj *
+			glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+
+		omniShader->UseShader();
+
+		//send the cubemap depths
+		for (unsigned int i = 0; i < 6; ++i)
+		{
+			GLint shadowMatLoc = glGetUniformLocation(omniShader->shaderID, ("shadowMatrices[" + std::to_string(i) + "]").c_str());
+			glUniformMatrix4fv(shadowMatLoc, 1, GL_FALSE, glm::value_ptr(shadowTransforms.at(i)));
+		}
+
+		//far plane uniform
+		GLint farPlaneLoc = glGetUniformLocation(omniShader->shaderID, "far_plane");
+		glUniform1f(farPlaneLoc, far_plane);
+
+		GLint lightPosLoc = glGetUniformLocation(omniShader->shaderID, "lightPos");
+		glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
+
+		for (auto mesh : meshes)
+		{
+			// Get the uniform locations for MVP
+			GLint modelLoc = glGetUniformLocation(omniShader->shaderID, "model");
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(mesh->getModel()));
+
+
+			glBindVertexArray(mesh->getVertexArrayObject());
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->getIndexBuffer());
+
+			glDrawElements(GL_TRIANGLES, mesh->getNumIndices(), GL_UNSIGNED_INT, 0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			glBindVertexArray(0);
+		}
+		glViewport(0, 0, bufferWidth, bufferHeight);
+		glCullFace(GL_BACK);
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
 }
 
 GLfloat Window::getXChange()
@@ -373,94 +624,6 @@ void Window::update(float dt)
 		}
 	}
 	
-}
-
-void Window::drawScreenQuad()
-{
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	frameshader->UseShader();
-
-	GLuint toggleLoc = glGetUniformLocation(frameshader->shaderID, "toggle");
-	glUniform1i(toggleLoc, toggler);
-	//get the position of the light count
-	glBindVertexArray(screenQuad->getVertexArrayObject());
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, screenQuad->getIndexBuffer());
-	fb.useBuffer();
-	glDrawElements(GL_TRIANGLES, screenQuad->getNumIndices(), GL_UNSIGNED_INT, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-}
-
-void Window::drawSkyBox()
-{
-	mat4 app_view = glm::mat4(glm::mat3(camera.calculateViewMatrix()));
-	mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 1000.0f);
-
-	glDepthMask(GL_FALSE);
-	skyBoxShader->UseShader();
-
-	GLint viewLoc = glGetUniformLocation(skyBoxShader->shaderID, "view");
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(app_view));
-
-	GLint projLoc = glGetUniformLocation(skyBoxShader->shaderID, "projection");
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(app_projection));
-
-	glBindVertexArray(skycube->getVertexArrayObject());
-
-	glBindTexture(GL_TEXTURE_CUBE_MAP, skycube->getTexture().getSkyBoxID());
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skycube->getIndexBuffer());
-
-	glDrawElements(GL_TRIANGLES, skycube->getNumIndices(), GL_UNSIGNED_INT, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-	glDepthMask(GL_TRUE);
-}
-
-void Window::drawShadows()
-{
-	glEnable(GL_DEPTH_TEST);
-	glCullFace(GL_FRONT);
-	/* clear depth attachment */
-	glViewport(0, 0, 4048, 4048);
-	float near_plane = 0.1f, far_plane = 520.0f;
-
-	mat4 app_view = camera.calculateViewMatrix();
-	mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 1000.0f);
-
-	glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
-	
-	glm::vec3 lightPos = glm::vec3(directional.at(0)->getPos());
-	glm::mat4 lightView = glm::lookAt(lightPos,		//position
-		glm::vec3(0.0f, 0.0f, 0.0f),									//center
-		glm::vec3(0.0f, 1.0f, 0.0f));									//up
-
-	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
-	shadowShader->UseShader();
-
-	for (auto mesh : meshes)
-	{
-		// Get the uniform locations for MVP
-		GLint modelLoc = glGetUniformLocation(shadowShader->shaderID, "model");
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(mesh->getModel()));
-		GLint lightSpaceMatLoc = glGetUniformLocation(shadowShader->shaderID, "lightSpaceMatrix");
-		glUniformMatrix4fv(lightSpaceMatLoc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
-
-		glBindVertexArray(mesh->getVertexArrayObject());
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->getIndexBuffer());
-
-		glDrawElements(GL_TRIANGLES, mesh->getNumIndices(), GL_UNSIGNED_INT, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-	}
-	glViewport(0, 0, bufferWidth, bufferHeight);
-	glCullFace(GL_BACK);
 }
 
 Window::~Window()
