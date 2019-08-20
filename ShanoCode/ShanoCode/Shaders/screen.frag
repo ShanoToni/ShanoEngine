@@ -5,6 +5,8 @@ in vec2 TexCoord;
 
 // texture samplers
 uniform sampler2D tex;
+uniform sampler2D blur;
+uniform sampler2D sky;
 uniform int toggle;
 
 void main()
@@ -97,9 +99,18 @@ void main()
 	//REGULAR
 	else
 	{
+		float exposure = 1.0;
 		// float depthValue = texture(tex, TexCoord).r;
     	//  FragColor = vec4(vec3(depthValue), 1.0);
-		FragColor = texture(tex, TexCoord);
+		vec3 hdrColor = texture(tex, TexCoord).rgb;
+		vec3 bloomColor = texture(blur, TexCoord).rgb;
+		vec3 skyCol = texture(sky,TexCoord).rgb;
+		hdrColor += skyCol;
+		hdrColor += bloomColor;
+		vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
+
+		FragColor = vec4(mapped , 1.0);
+		//FragColor = texture(tex, TexCoord);
 	}
 	
 	//FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);

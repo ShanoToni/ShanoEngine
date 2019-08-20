@@ -36,7 +36,7 @@ std::vector<Model*> modelList;
 //Shader list
 std::vector<Shader> shaderList;
 //Lights
-DirectionalLight mainLight;
+DirectionalLight *  mainLight;
 //Texture list
 std::vector<Texture*> texList;
 
@@ -86,6 +86,12 @@ static const char* oFShader = "Shaders/omni.frag";
 //Geometry Shader
 static const char* oGShader = "Shaders/omni.geom";
 
+//BLUR SHADER
+//Vert Shader
+static const char* bVShader = "Shaders/blur.vert";
+//Frag Shader
+static const char* bFShader = "Shaders/blur.frag";
+
 
 void CreateObjects()
 {
@@ -119,19 +125,67 @@ void CreateObjects()
 		}
 	}
 
+	//left wall
+	Mesh *obj1 = new Mesh(Mesh::CUBE);
+
+	obj1->initTransform();
+	obj1->setTexture(*texList[0]);
+	obj1->loadTexture();
+
+	obj1->translate(vec3(-15.0,9.0,-20.0));
+	obj1->scale(vec3(0.9, 12.9f, 20.9));
+
+	obj1->setMaterial(Material(.01f, 4));
+
+	obj1->setShader(shaderList[0]);
+
+	mainWindow.addMesh(obj1);
+
+	//back wall
+
+	obj1 = new Mesh(Mesh::CUBE);
+
+	obj1->initTransform();
+	obj1->setTexture(*texList[0]);
+	obj1->loadTexture();
+
+	obj1->translate(vec3(5.0, 9.0, -40.0));
+	obj1->scale(vec3(20.9f, 12.9f, 0.9));
+
+	obj1->setMaterial(Material(.01f, 4));
+
+	obj1->setShader(shaderList[0]);
+
+	mainWindow.addMesh(obj1);
+
+	//right wall
+	obj1 = new Mesh(Mesh::CUBE);
+
+	obj1->initTransform();
+	obj1->setTexture(*texList[0]);
+	obj1->loadTexture();
+
+	obj1->translate(vec3(25.0, 9.0, -20.0));
+	obj1->scale(vec3(0.9, 12.9f, 20.9));
+
+	obj1->setMaterial(Material(.01f, 4));
+
+	obj1->setShader(shaderList[0]);
+
+	mainWindow.addMesh(obj1);
+
 
 	//Sphere
 	Mesh *obj2 = new Mesh(Mesh::SPHERE3);
 
 	obj2->initTransform();
-	obj2->translate(vec3(0.0f, 5.3f, 0.0f));
+	obj2->translate(vec3(-5.0f, 7.0f, -3.0f));
 	obj2->scale(vec3(1.0f, 1.0f, 1.0f));
 
-	obj2->setMaterial(Material(1.0f, 32));
 
 	obj2->setShader(shaderList[0]);
 
-	obj2->setTexture("Textures/mars.jpg");
+	obj2->setTexture("Textures/plane.jpg");
 	obj2->loadTexture();
 
 	mainWindow.addMesh(obj2);
@@ -140,7 +194,7 @@ void CreateObjects()
 	Mesh *obj3 = new Mesh(Mesh::SPHERE3);
 
 	obj3->initTransform();
-	obj3->translate(vec3(-8.0f, 8.3f, -12.0f));
+	obj3->translate(vec3(-3.0f, 14.3f, -12.0f));
 	obj3->scale(vec3(2.0f, 2.0f, 2.0f));
 
 	obj3->setMaterial(Material(1.0f, 32));
@@ -155,26 +209,28 @@ void CreateObjects()
 	Mesh *obj4 = new Mesh(Mesh::CUBE);
 
 	obj4->initTransform();
-	obj4->translate(vec3(8.0f, 8.3f, -12.0f));
-	obj4->scale(vec3(2.0f, 2.0f, 2.0f));
+	obj4->translate(vec3(8.0f, 12.3f, -20.0f));
+	obj4->scale(vec3(1.0f, 1.0f, 1.0f));
 
-	obj4->setMaterial(Material(1.0f, 32));
+	obj4->setMaterial(Material(0.01f, 32));
 
 	obj4->setShader(shaderList[0]);
 
-	obj4->setTexture("Textures/brick.jpg");
+	obj4->setTexture("Textures/plane.jpg");
 
 	obj4->loadTexture();
 	mainWindow.addMesh(obj4);
+
+	
 
 	// Normal map cube
 	Mesh *obj5 = new Mesh(Mesh::CUBE);
 
 	obj5->initTransform();
-	obj5->translate(vec3(13.0f, 8.3f, -12.0f));
+	obj5->translate(vec3(13.0f, 8.3f, -15.0f));
 	obj5->scale(vec3(2.0f, 2.0f, 2.0f));
 
-	obj5->setMaterial(Material(1.0f, 32));
+	obj5->setMaterial(Material(0.05f, 32));
 
 	obj5->setShader(shaderList[1]);
 
@@ -188,7 +244,7 @@ void CreateObjects()
 
 		mod1 = new Model();
 		mod1->loadModel("Models/lowpolytree.obj");
-		mod1->translate(vec3(-5.0f, 5.0f, -8.0f ));
+		mod1->translate(vec3(-5.0f, 5.0f, -17.0f ));
 		mod1->scale(glm::vec3(2.0, 2.0, 2.0));
 		mod1->addShader(shaderList[0]);
 		for (auto mesh : mod1->getMeshes())
@@ -243,10 +299,42 @@ void CreateShaders()
 	Shader * shader4 = new Shader();
 	shader4->CreateFromFiles(oVShader, oGShader, oFShader);
 	mainWindow.setOmniShader(shader4);
+
+	Shader * shader5 = new Shader();
+	shader5->CreateFromFiles(bVShader, bFShader);
+	mainWindow.setBlurShader(shader5);
 	
 	
 }
 
+void createLights() 
+{
+	glm::vec3 dir = glm::normalize(glm::vec3(-50, -50, -50));
+	mainLight = new DirectionalLight(1.0f, 1.0f, 1.0f, 0.001f,
+		dir.x, dir.y, dir.z, 0.001f);
+
+	mainWindow.addLight(mainLight);
+
+	mainWindow.addPLight(new PointLight(0.0f, 0.0f, 18.0f,
+										0.2f, 2.0f,
+										-5.0f, 7.0f, -3.0f,
+										0.3f, 0.2f, 0.1f));
+
+	mainWindow.addPLight(new PointLight(10.0f, 0.0f, 0.0f,		/* R G B*/
+										0.2f, 2.5f,			/*ambientIntensity diffuseIntensity */
+										8.0f, 12.3, -20.0f,		/* Location xyz*/
+										0.2f, 0.1f, 0.1f));		/* Const Lin Exp*/
+
+//Flashlight MANDITORY same list as the rest of the spot lights easier to render
+
+	mainWindow.addSLight(new SpotLight(5.0f, 5.0f, 5.0f,
+		0.2f, 60.0f,
+		0.0f, 10.0f, 10.0f,
+		0.5f, 0.3f, 0.2f,
+		0.0f, -1.0f, 0.0f, 30.0f));  /* Direction xyz Edge */
+
+
+}
 int main()
 {
 	//window
@@ -258,33 +346,9 @@ int main()
 	CreateShaders();
 	CreateSkybox();
 	CreateObjects();
-
+	createLights();
 	
-	glm::vec3 dir = glm::normalize(glm::vec3(-50, -50, -50));
-	mainLight = DirectionalLight(1.0f,1.0f,1.0f,0.01f,
-					dir.x, dir.y, dir.z, 0.1f);
-
-	mainWindow.addLight(&mainLight);
-
-	mainWindow.addPLight(&PointLight(1.0f, 0.0f, 0.0f,		/* R G B*/
-									0.2f, 40.0f,				/*ambientIntensity diffuseIntensity */
-									-10.0f, 20.0f, 0.0f,	/* Location xyz*/
-									0.2f, 0.1f, 0.1f));		/* Const Lin Exp*/
-
-	mainWindow.addPLight(&PointLight(1.0f, 1.0f, 1.0f,
-								0.02f, 40.0f,
-								10.0f, 15.0f, 0.0f,
-								0.3f, 0.2f, 0.1f));
-
-	//Flashlight MANDITORY same list as the rest of the spot lights easier to render
 	
-	mainWindow.addSLight(&SpotLight(1.0f, 1.0f, 1.0f,
-									0.2f, 20.0f,
-									0.0f, 10.0f, 10.0f,
-									0.5f, 0.3f, 0.2f,
-									0.0f, -1.0f, 0.0f, 30.0f));  /* Direction xyz Edge */
-
-
 	float offset = 0.02;
 	float count = 0;
 	int dirs = 1;
@@ -292,6 +356,7 @@ int main()
 	// Loop until window closed
 	while (!mainWindow.getShouldClose())
 	{
+	
 		//handle time in seconds
 		GLfloat now = glfwGetTime();
 		dt = now - lastTime;

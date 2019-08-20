@@ -1,6 +1,7 @@
 #version 410
 
-out vec4 color;
+layout (location = 0) out vec4 color;
+layout (location = 1) out vec4 BrightColor;
 
 in vec4 vCol;
 in vec2 TexCoord;
@@ -74,7 +75,7 @@ float shadowCalc(vec3 pos, int i)
 	closestDepth *= far_plane;
 
 	float currentDepth = length(fragToLight);
-	float bias = 0.05;
+	float bias = 1.1;
 	float shadows = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
 	return shadows;
@@ -120,7 +121,7 @@ vec4 CalcLightByDirection(Light light, vec3 direction, float shadowFactor)
 		if(specFactor> 0.0f)
 		{
 			specFactor = pow(specFactor, material.shininess);
-			specularColor = vec4(light.color * material.specIntensity * specFactor, 1.0f);
+			specularColor = vec4(light.color * light.diffuseIntensity * material.specIntensity * specFactor, 1.0f);
 		}
 	}
 
@@ -200,5 +201,11 @@ void main()
 
 	//color = vec4(vec3(closestDepth/far_plane ), 1.0f);
 	color = texture(tex, TexCoord) * final;
+
+	 float brightness = dot(color.rgb, vec3(0.4126, 0.8152, 0.1722));
+    if(brightness > 1.0)
+        BrightColor = vec4(color.rgb, 1.0);
+    else
+        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }
 											

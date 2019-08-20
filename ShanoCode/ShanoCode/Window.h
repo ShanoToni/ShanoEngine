@@ -77,6 +77,10 @@ public:
 	//poit shadows OMNI DIRECTIONAL FTW
 	void setOmniShader(Shader * shader) { omniShader = shader ; }
 	void drawOmniShadows();
+	//blur buffers
+	void setBlurShader(Shader * shader) { blurShader = shader; }
+	void drawBlurTex();
+
 	void swapBuffers() {glfwSwapBuffers(mainWindow);}
 
 	~Window();
@@ -104,6 +108,7 @@ private:
 
 	//Framebuffer
 	Framebuffer fb;
+	Framebuffer fb2;
 	Shader * frameshader;
 	Mesh * screenQuad;
 	int toggler;
@@ -120,6 +125,10 @@ private:
 	//OmniDirectional Shadows
 	Framebuffer omniBuffers[MAX_POINT_LIGHTS+MAX_SPOT_LIGHTS];
 	Shader * omniShader;
+
+	//Blur Buffer
+	Framebuffer blurBuffer;
+	Shader * blurShader;
 
 	GLint width, height;
 	GLint bufferWidth, bufferHeight;

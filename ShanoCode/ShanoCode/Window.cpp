@@ -96,6 +96,10 @@ int Window::Initialise()
 	//Set framebuffer
 	fb = Framebuffer();
 	fb.initFB();
+
+	fb2 = Framebuffer();
+	fb2.initFB();
+
 	toggler = 0;
 
 	//Set Shadow Buffer
@@ -108,6 +112,9 @@ int Window::Initialise()
 		omniBuffers[i] = Framebuffer();
 		omniBuffers[i].init3DDB();
 	}
+	//set blur buffer
+	blurBuffer = Framebuffer();
+	blurBuffer.initBB();
 
 	glEnable(GL_MULTISAMPLE);
 
@@ -144,21 +151,25 @@ void Window::showFPS()
 void Window::draw()
 {
 	//shadows
-
 	drawOmniShadows();
-
 
 	shadowBuffer.drawShadow();
 	drawShadows();
-
 	
+	//bloom effect
+	fb2.drawToBuffer();
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	drawScene();
+	drawBlurTex();
+
 	//choose to draw to framebuffer
 	fb.drawToBuffer();
-
 	//Draw skybox before rest of geometry
 	drawSkyBox();
-	//Draw scene
 	drawScene();
+	//Draw scene
+
 
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	drawScreenQuad();
@@ -169,7 +180,7 @@ void Window::drawScene()
 	mat4 app_view = camera.calculateViewMatrix();
 	mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 1000.0f);
 
-	float near_plane = 0.1f, far_plane = 520.0f;
+	float near_plane = 5.1f, far_plane = 520.0f;
 	glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
 
 	glm::vec3 lightPos = glm::vec3(directional.at(0)->getPos());
@@ -270,7 +281,6 @@ void Window::drawScene()
 
 void Window::drawScreenQuad()
 {
-	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -282,7 +292,16 @@ void Window::drawScreenQuad()
 	//get the position of the light count
 	glBindVertexArray(screenQuad->getVertexArrayObject());
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, screenQuad->getIndexBuffer());
-	fb.useBuffer();
+	GLint texLoc = glGetUniformLocation(frameshader->shaderID, "tex");
+	fb.useBuffer(1, texLoc);
+	glUniform1i(texLoc, 1);
+
+	GLint blurLoc = glGetUniformLocation(frameshader->shaderID, "blur");
+	glActiveTexture(GL_TEXTURE0 + 2);
+	glBindTexture(GL_TEXTURE_2D, blurBuffer.getPingPongTex(0));
+
+	glUniform1i(blurLoc, 2);
+
 	glDrawElements(GL_TRIANGLES, screenQuad->getNumIndices(), GL_UNSIGNED_INT, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -363,7 +382,7 @@ void Window::drawOmniShadows()
 		glCullFace(GL_FRONT);
 		/* clear depth attachment */
 		glViewport(0, 0, 4048, 4048);
-		float near_plane = 0.1f, far_plane = 520.0f;
+		float near_plane = 5.1f, far_plane = 520.0f;
 		float aspect = (float)4048.0f / (float)4048.0f;
 
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plane, far_plane);
@@ -479,6 +498,37 @@ void Window::drawOmniShadows()
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+}
+
+void Window::drawBlurTex()
+{
+	bool horizontal = true;
+	bool first_iteration = true;
+	int amount = 20;
+	blurShader->UseShader();
+	
+	for (int i = 0; i < amount; i++)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, blurBuffer.getPingPongFBO(horizontal));
+		GLint horizontalLoc = glGetUniformLocation(blurShader->shaderID, "horizontal");
+		glUniform1i(horizontalLoc, horizontal);
+		glBindVertexArray(screenQuad->getVertexArrayObject());
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, screenQuad->getIndexBuffer());
+		GLint texLoc = glGetUniformLocation(frameshader->shaderID, "tex");
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(
+			GL_TEXTURE_2D, first_iteration ? fb2.getTex(1) : blurBuffer.getPingPongTex(!horizontal)
+		);
+		//glUniform1i(texLoc, 2);
+		glDrawElements(GL_TRIANGLES, screenQuad->getNumIndices(), GL_UNSIGNED_INT, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+		horizontal = !horizontal;
+		if (first_iteration)
+			first_iteration = false;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 GLfloat Window::getXChange()
