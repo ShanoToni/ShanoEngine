@@ -18,15 +18,13 @@ Camera::Camera(glm::vec3 startPosition,
 	worldUp = startUp;
 	yaw = startYaw;
 	pitch = startPitch;
-	front = glm::vec3(0.0f, 0.0f, 1.0f);
+	front = glm::vec3(0.0f, 0.0f, -1.0f);
 	right = glm::vec3(1.0f, 0.0f, 0.0f);
 	up = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	movementSpeed = startMoveSpeed;
 	turnSpeed = startTurnSpeed;
 	
-
-
 	Update();
 }
 
@@ -111,7 +109,7 @@ void Camera::Update()
 	front.y = sin(glm::radians(pitch));
 	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 
-	front = glm::normalize(front);
+	//front = glm::normalize(front);
 
 	right = glm::normalize(glm::cross(front, worldUp));
 	up = glm::normalize(glm::cross(right, front));

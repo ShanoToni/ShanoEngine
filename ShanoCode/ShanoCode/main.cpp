@@ -24,6 +24,8 @@
 #include "Material.h"
 #include "assimp/Importer.hpp"
 #include "Model.h"
+#include "Particle.h"
+#include "Physics.h"
 
 // WINDOW DIMENTIONS
 const GLint WIDTH = 800, HEIGHT = 600;
@@ -34,7 +36,7 @@ Window mainWindow;
 std::vector<Mesh*> meshList;
 std::vector<Model*> modelList;
 //Shader list
-std::vector<Shader> shaderList;
+std::vector<Shader*> shaderList;
 //Lights
 DirectionalLight *  mainLight;
 //Texture list
@@ -92,11 +94,16 @@ static const char* bVShader = "Shaders/blur.vert";
 //Frag Shader
 static const char* bFShader = "Shaders/blur.frag";
 
+//PHYSICS
+
+//Vert Shader
+static const char* paVShader = "Shaders/particle.vert";
+//Frag Shader
+static const char* paFShader = "Shaders/particle.frag";
 
 void CreateObjects()
 {
-	Mesh * screen = new Mesh();
-	mainWindow.setScreenQuad(screen);
+	
 
 	//PLANE
 	float size = 20.0f;
@@ -119,7 +126,7 @@ void CreateObjects()
 
 			obj1->setMaterial(Material(.1f, 4));
 
-			obj1->setShader(shaderList[0]);
+			obj1->setShader(*shaderList[0]);
 
 			mainWindow.addMesh(obj1);
 		}
@@ -137,7 +144,7 @@ void CreateObjects()
 
 	obj1->setMaterial(Material(.01f, 4));
 
-	obj1->setShader(shaderList[0]);
+	obj1->setShader(*shaderList[0]);
 
 	mainWindow.addMesh(obj1);
 
@@ -154,7 +161,7 @@ void CreateObjects()
 
 	obj1->setMaterial(Material(.01f, 4));
 
-	obj1->setShader(shaderList[0]);
+	obj1->setShader(*shaderList[0]);
 
 	mainWindow.addMesh(obj1);
 
@@ -170,7 +177,7 @@ void CreateObjects()
 
 	obj1->setMaterial(Material(.01f, 4));
 
-	obj1->setShader(shaderList[0]);
+	obj1->setShader(*shaderList[0]);
 
 	mainWindow.addMesh(obj1);
 
@@ -183,7 +190,7 @@ void CreateObjects()
 	obj2->scale(vec3(1.0f, 1.0f, 1.0f));
 
 
-	obj2->setShader(shaderList[0]);
+	obj2->setShader(*shaderList[0]);
 
 	obj2->setTexture("Textures/plane.jpg");
 	obj2->loadTexture();
@@ -199,7 +206,7 @@ void CreateObjects()
 
 	obj3->setMaterial(Material(1.0f, 32));
 
-	obj3->setShader(shaderList[0]);
+	obj3->setShader(*shaderList[0]);
 
 	obj3->setTexture("Textures/mars.jpg");
 	obj3->loadTexture();
@@ -214,7 +221,7 @@ void CreateObjects()
 
 	obj4->setMaterial(Material(0.01f, 32));
 
-	obj4->setShader(shaderList[0]);
+	obj4->setShader(*shaderList[0]);
 
 	obj4->setTexture("Textures/plane.jpg");
 
@@ -232,7 +239,7 @@ void CreateObjects()
 
 	obj5->setMaterial(Material(0.05f, 32));
 
-	obj5->setShader(shaderList[1]);
+	obj5->setShader(*shaderList[1]);
 
 	obj5->setTexture("Textures/brick.jpg");
 	obj5->setNormalMap("Textures/bricknor.jpg");
@@ -246,7 +253,7 @@ void CreateObjects()
 		mod1->loadModel("Models/lowpolytree.obj");
 		mod1->translate(vec3(-5.0f, 5.0f, -17.0f ));
 		mod1->scale(glm::vec3(2.0, 2.0, 2.0));
-		mod1->addShader(shaderList[0]);
+		mod1->addShader(*shaderList[0]);
 		for (auto mesh : mod1->getMeshes())
 		{
 			mainWindow.addMesh(mesh);
@@ -282,11 +289,11 @@ void CreateShaders()
 {
 	Shader *shader1 = new Shader();
 	shader1->CreateFromFiles(vShader, fShader);
-	shaderList.push_back(*shader1);
+	shaderList.push_back(shader1);
 
 	Shader *shader11 = new Shader();
 	shader11->CreateFromFiles(nvShader, nfShader);
-	shaderList.push_back(*shader11);
+	shaderList.push_back(shader11);
 
 	Shader *shader2 = new Shader();
 	shader2->CreateFromFiles(sVShader, sFShader);
@@ -303,6 +310,10 @@ void CreateShaders()
 	Shader * shader5 = new Shader();
 	shader5->CreateFromFiles(bVShader, bFShader);
 	mainWindow.setBlurShader(shader5);
+
+	//Shader * shader7 = new Shader();
+	//shader5->CreateFromFiles(paVShader, paFShader);
+	//shaderList.push_back(shader7);
 	
 	
 }
@@ -310,71 +321,118 @@ void CreateShaders()
 void createLights() 
 {
 	glm::vec3 dir = glm::normalize(glm::vec3(-50, -50, -50));
-	mainLight = new DirectionalLight(1.0f, 1.0f, 1.0f, 0.001f,
-		dir.x, dir.y, dir.z, 0.001f);
+	mainLight = new DirectionalLight(1.0f, 1.0f, 1.0f, 0.01f,
+		dir.x, dir.y, dir.z, 1.1f);
 
 	mainWindow.addLight(mainLight);
 
-	mainWindow.addPLight(new PointLight(0.0f, 0.0f, 18.0f,
-										0.2f, 2.0f,
-										-5.0f, 7.0f, -3.0f,
-										0.3f, 0.2f, 0.1f));
-
-	mainWindow.addPLight(new PointLight(10.0f, 0.0f, 0.0f,		/* R G B*/
-										0.2f, 2.5f,			/*ambientIntensity diffuseIntensity */
-										8.0f, 12.3, -20.0f,		/* Location xyz*/
-										0.2f, 0.1f, 0.1f));		/* Const Lin Exp*/
-
-//Flashlight MANDITORY same list as the rest of the spot lights easier to render
-
-	mainWindow.addSLight(new SpotLight(5.0f, 5.0f, 5.0f,
-		0.2f, 60.0f,
-		0.0f, 10.0f, 10.0f,
-		0.5f, 0.3f, 0.2f,
-		0.0f, -1.0f, 0.0f, 30.0f));  /* Direction xyz Edge */
+//	mainWindow.addPLight(new PointLight(0.0f, 0.0f, 18.0f,
+//										0.2f, 2.0f,
+//										-5.0f, 7.0f, -3.0f,
+//										0.3f, 0.2f, 0.1f));
+//
+//	mainWindow.addPLight(new PointLight(10.0f, 0.0f, 0.0f,		/* R G B*/
+//										0.2f, 2.5f,			/*ambientIntensity diffuseIntensity */
+//										8.0f, 12.3, -20.0f,		/* Location xyz*/
+//										0.2f, 0.1f, 0.1f));		/* Const Lin Exp*/
+//
+////Flashlight MANDITORY same list as the rest of the spot lights easier to render
+//
+//	mainWindow.addSLight(new SpotLight(5.0f, 5.0f, 5.0f,
+//		0.2f, 60.0f,
+//		0.0f, 10.0f, 10.0f,
+//		0.5f, 0.3f, 0.2f,
+//		0.0f, -1.0f, 0.0f, 30.0f));  /* Direction xyz Edge */
 
 
 }
+
 int main()
 {
 	//window
 
 	mainWindow = Window(1366, 768);
 	mainWindow.Initialise();
+	Mesh * screen = new Mesh();
+	mainWindow.setScreenQuad(screen);
 
 	//-------------------SCENE SETUP-------------------------
 	CreateShaders();
 	CreateSkybox();
-	CreateObjects();
+	//CreateObjects();
 	createLights();
+
+	//floor mesh for now
+	Mesh *obj1 = new Mesh(Mesh::CUBE);
+
+	obj1->initTransform();
+	obj1->setTexture("Textures/plane.jpg");
+	obj1->loadTexture();
+
+	obj1->scale(vec3(20.0f, 0.05f, 20.0f));
+
+	obj1->setShader(*shaderList[0]);
+
+	mainWindow.addMesh(obj1);
+
+	//Physics
+	Physics phys = Physics();
+	phys.setShader(*shaderList[0]);
+	phys.init();
+
+	for (auto & p : phys.getParticles())
+	{
+		mainWindow.addMesh(p->getMesh());
+	}
 	
-	
-	float offset = 0.02;
-	float count = 0;
-	int dirs = 1;
+
+	// new time	
+	const float dt = 0.0003f;
+	float accumulator = 0.0f;
+	GLfloat currentTime = (GLfloat)glfwGetTime();
 
 	// Loop until window closed
 	while (!mainWindow.getShouldClose())
 	{
 	
-		//handle time in seconds
-		GLfloat now = glfwGetTime();
-		dt = now - lastTime;
-		lastTime = now;
+		//New frame time
+		GLfloat newTime = (GLfloat)glfwGetTime();
+		GLfloat frameTime = newTime - currentTime;
+
+		//*******************************************************************************************************************
+		frameTime *= 1.0;
+		currentTime = newTime;
+		accumulator += frameTime;
+
+		//Basic collision
+	
+		while (accumulator >= dt)
+		{
+			phys.collide();
+			phys.useForces();
+			phys.update(dt);
+			// integration position
+			//rb->setAcc(rb->applyForces(rb->getPos(), rb->getVel()));
+			//rb->getVel() = rb->getVel() + dt * rb->getAcc();
+			//rb->setPos(rb->getPos() + dt * (rb->getVel()));
+
+			//// integration  rotation
+			//rb->setAngVel(rb->getAngVel() + dt * rb->getAngAcc());
+			//glm::mat3 angVelSkew = glm::matrixCross3(rb->getAngVel());
+			//glm::mat3 R = glm::mat3(rb->getRotate());
+			//R += dt * angVelSkew * R;
+			//R = glm::orthonormalize(R);
+			//rb->getMesh().setRotate(glm::mat4(R));
+			
+			accumulator -= dt;
+
+		}
 		// get and handle user input events
 		glfwPollEvents();
 		mainWindow.showFPS();
-		mainWindow.update(dt);
+		//mainWindow.update(dt);
 
-		count += dt;
-
-		if (count > 6.0)
-		{
-			dirs = -dirs;
-			count = 0;
-		}
-
-		mod1->translate(glm::vec3(offset * dirs, 0, 0));
+		
 
 		mainWindow.camera.keyControl(mainWindow.getKeys(), dt);
 		mainWindow.camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
@@ -384,7 +442,8 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//Draw meshes
-		mainWindow.draw();
+		//mainWindow.draw();
+		mainWindow.drawPhysics();
 
 		mainWindow.swapBuffers();
 	}

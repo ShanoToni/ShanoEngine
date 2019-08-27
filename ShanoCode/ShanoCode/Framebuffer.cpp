@@ -138,7 +138,7 @@ void Framebuffer::init3DDB()
 	unsigned int depthMapFBO;
 	//create Framebuffer on the GPU
 	glGenFramebuffers(1, &depthMapFBO);
-	const unsigned int SHADOW_WIDTH = 4048, SHADOW_HEIGHT = 4048;
+	const unsigned int SHADOW_WIDTH = 1048, SHADOW_HEIGHT = 1048;
 	
 	//create a texture 
 	unsigned int depthCubemap;

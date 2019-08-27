@@ -89,7 +89,7 @@ int Window::Initialise()
 	glfwSetWindowUserPointer(mainWindow, this);
 
 	// Initialize cammera
-	camera = Camera(vec3(0.0f), vec3(0.0f, 5.0f, 0.0f), -90.0f*toRadians, 1.0f * toRadians, 8.0f, 0.3f);
+	camera = Camera(vec3(0.0f, 5.0f, 10.0f), vec3(0.0f, 1.0f, 0.0f), 90.0f, 0.0f, 80.0f, 0.3f);
 	flashTime = 0.5f;
 	toggleTime = 0.5f;
 
@@ -161,13 +161,13 @@ void Window::draw()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	drawScene();
-	drawBlurTex();
 
 	//choose to draw to framebuffer
 	fb.drawToBuffer();
 	//Draw skybox before rest of geometry
 	drawSkyBox();
 	drawScene();
+	drawBlurTex();
 	//Draw scene
 
 
@@ -279,6 +279,31 @@ void Window::drawScene()
 	}
 }
 
+void Window::drawPhysics()
+{
+	//shadows
+
+	shadowBuffer.drawShadow();
+	drawShadows();
+
+	//bloom effect
+	
+
+	//choose to draw to framebuffer
+	fb.drawToBuffer();
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	//Draw skybox before rest of geometry
+	//drawSkyBox();
+	drawScene();
+	//Draw scene
+
+
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	drawScreenQuad();
+
+}
+
 void Window::drawScreenQuad()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
@@ -381,9 +406,9 @@ void Window::drawOmniShadows()
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_FRONT);
 		/* clear depth attachment */
-		glViewport(0, 0, 4048, 4048);
+		glViewport(0, 0, 1048, 1048);
 		float near_plane = 5.1f, far_plane = 520.0f;
-		float aspect = (float)4048.0f / (float)4048.0f;
+		float aspect = (float)1048.0f / (float)1048.0f;
 
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plane, far_plane);
 		glm::vec3 lightPos = points.at(i)->getPos();
@@ -442,9 +467,9 @@ void Window::drawOmniShadows()
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_FRONT);
 		/* clear depth attachment */
-		glViewport(0, 0, 4048, 4048);
+		glViewport(0, 0, 1048, 1048);
 		float near_plane = 0.1f, far_plane = 520.0f;
-		float aspect = (float)4048.0f / (float)4048.0f;
+		float aspect = (float)1048.0f / (float)1048.0f;
 
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_plane, far_plane);
 		glm::vec3 lightPos = spots.at(i - MAX_POINT_LIGHTS)->getPos();

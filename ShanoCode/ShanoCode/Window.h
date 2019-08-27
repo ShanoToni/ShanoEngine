@@ -36,6 +36,7 @@ public:
 	//DRAW MESHES
 	void draw();
 	void drawScene();
+	void drawPhysics();
 
 	GLfloat GetBufferWidth() { return bufferWidth; }
 	GLfloat GetGufferHeight() { return bufferHeight; }
