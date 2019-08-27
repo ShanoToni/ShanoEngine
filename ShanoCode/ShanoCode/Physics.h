@@ -1,6 +1,10 @@
 #pragma once
-
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/matrix_cross_product.hpp>
+#include <glm/gtx/orthonormalize.hpp>
 #include "Particle.h"
+#include "Body.h"
 #include <random>
 
 class Physics
@@ -12,6 +16,7 @@ public:
 	void setShader(Shader s) { shader = s; }
 
 	std::vector<Particle*> getParticles() { return particleList; }
+	std::vector<Body*> getBodies() { return bodyList; }
 
 	//integrate
 	void update(float dt);
@@ -21,17 +26,20 @@ public:
 	//simple collision
 	void collide();
 
-	void setSpringVars(float s, float d, float r) { ks = s; kd = d; rest = r; }
-	void applySpring(Particle * p, glm::vec3 pos);
+	void applySpring(float ks, float kd, float rest, Particle * p, glm::vec3 pos, glm::vec3 vel);
+
+	//impuse check what happens
+	void applyImpulse(float currentTime, float delay, glm::vec3 applicationPoint, glm::vec3 impuse, Body * b);
 
 	~Physics();
 private:
 	float getRandom();
 	std::vector<Particle*> particleList;
+	std::vector<Body*> bodyList;
 	Shader shader;
 	//gravity
 	glm::vec3 gravity;
 	//spring variables
-	float ks, kd, rest;
+	bool applied;
 };
 

@@ -362,18 +362,7 @@ int main()
 	//CreateObjects();
 	createLights();
 
-	//floor mesh for now
-	Mesh *obj1 = new Mesh(Mesh::CUBE);
-
-	obj1->initTransform();
-	obj1->setTexture("Textures/plane.jpg");
-	obj1->loadTexture();
-
-	obj1->scale(vec3(20.0f, 0.05f, 20.0f));
-
-	obj1->setShader(*shaderList[0]);
-
-	mainWindow.addMesh(obj1);
+	
 
 	//Physics
 	Physics phys = Physics();
@@ -384,10 +373,15 @@ int main()
 	{
 		mainWindow.addMesh(p->getMesh());
 	}
+
+	for (auto &b : phys.getBodies())
+	{
+		mainWindow.addMesh(b->getMesh());
+	}
 	
 
 	// new time	
-	const float dt = 0.0003f;
+	const float dt = 0.0005f;
 	float accumulator = 0.0f;
 	GLfloat currentTime = (GLfloat)glfwGetTime();
 
@@ -404,25 +398,15 @@ int main()
 		currentTime = newTime;
 		accumulator += frameTime;
 
-		//Basic collision
+		//impuse
+		phys.applyImpulse(currentTime, 5, vec3(-1, -0.1, 0), vec3(1, 0, 0), phys.getBodies().at(0));
 	
 		while (accumulator >= dt)
 		{
 			phys.collide();
 			phys.useForces();
 			phys.update(dt);
-			// integration position
-			//rb->setAcc(rb->applyForces(rb->getPos(), rb->getVel()));
-			//rb->getVel() = rb->getVel() + dt * rb->getAcc();
-			//rb->setPos(rb->getPos() + dt * (rb->getVel()));
-
-			//// integration  rotation
-			//rb->setAngVel(rb->getAngVel() + dt * rb->getAngAcc());
-			//glm::mat3 angVelSkew = glm::matrixCross3(rb->getAngVel());
-			//glm::mat3 R = glm::mat3(rb->getRotate());
-			//R += dt * angVelSkew * R;
-			//R = glm::orthonormalize(R);
-			//rb->getMesh().setRotate(glm::mat4(R));
+			
 			
 			accumulator -= dt;
 

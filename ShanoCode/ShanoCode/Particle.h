@@ -25,7 +25,7 @@ public:
 	void setAcc(const glm::vec3 & vect) { acc = vect; }
 	void setVel(const glm::vec3 & vect) { vel = vect; }
 	void setPos(const glm::vec3 & vect) { pos = vect; mesh->setPos(vect); }
-	void setPost(int i, float p) { pos[i] = p; mesh->setPos(i, p); }
+	void setPos(int i, float p) { pos[i] = p; mesh->setPos(i, p); }
 	
 	void setMass(float m) { mass = m; }
 
