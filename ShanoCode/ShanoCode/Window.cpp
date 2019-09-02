@@ -89,7 +89,7 @@ int Window::Initialise()
 	glfwSetWindowUserPointer(mainWindow, this);
 
 	// Initialize cammera
-	camera = Camera(vec3(0.0f, 5.0f, 10.0f), vec3(0.0f, 1.0f, 0.0f), 90.0f, 0.0f, 80.0f, 0.3f);
+	camera = Camera(vec3(0.0f, 5.0f, 10.0f), vec3(0.0f, 1.0f, 0.0f), 90.0f, 0.0f, 300.0f, 0.3f);
 	flashTime = 0.5f;
 	toggleTime = 0.5f;
 
@@ -180,7 +180,7 @@ void Window::drawScene()
 	mat4 app_view = camera.calculateViewMatrix();
 	mat4 app_projection = glm::perspective(45.0f, (GLfloat)GetBufferWidth() / GetGufferHeight(), 0.1f, 1000.0f);
 
-	float near_plane = 5.1f, far_plane = 520.0f;
+	float near_plane = 0.1f, far_plane = 520.0f;
 	glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
 
 	glm::vec3 lightPos = glm::vec3(directional.at(0)->getPos());
@@ -365,7 +365,7 @@ void Window::drawShadows()
 	glCullFace(GL_FRONT);
 	/* clear depth attachment */
 	glViewport(0, 0, 4048, 4048);
-	float near_plane = 0.1f, far_plane = 520.0f;
+	float near_plane = 0.01f, far_plane = 520.0f;
 
 	glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
 	

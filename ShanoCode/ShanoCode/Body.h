@@ -54,6 +54,16 @@ public:
 
 	void updateInvInertia();
 
+	//static or dynamic body
+	void setStatic() { moving = false; }
+	void setDynamic();
+	bool getState() { return moving; }
+	void updateState();
+	void becomeStatic();
+	void setAlwaysStatic() { staticBody = true; }
+	bool isAlwaysStatic() { return staticBody; }
+	int getCounter() { return counter; }
+
 
 	ColliderTester getCollider() { return collider; }
 	void addCollider(TYPE t) { collider.setType(t); }
@@ -80,5 +90,9 @@ private:
 	glm::vec3 angAcc;
 
 	ColliderTester collider;
+	bool moving;
+	bool staticBody;
+	const int counter = 10;
+	std::vector<float> motions;
 };
 

@@ -381,7 +381,7 @@ int main()
 	
 
 	// new time	
-	const float dt = 0.0005f;
+	const float dt = 0.0009f;
 	float accumulator = 0.0f;
 	GLfloat currentTime = (GLfloat)glfwGetTime();
 
@@ -394,17 +394,17 @@ int main()
 		GLfloat frameTime = newTime - currentTime;
 
 		//*******************************************************************************************************************
-		frameTime *= 1.0;
+		frameTime *= 0.60;
 		currentTime = newTime;
 		accumulator += frameTime;
 
 		//impuse
-		phys.applyImpulse(currentTime, 5, vec3(-1, -0.1, 0), vec3(1, 0, 0), phys.getBodies().at(0));
+		//phys.applyImpulse(currentTime, 5, vec3(-1, -0.1, 0), vec3(1, 0, 0), phys.getBodies().at(0));
 	
 		while (accumulator >= dt)
 		{
-			phys.collide();
 			phys.useForces();
+			phys.collide();
 			phys.update(dt);
 			
 			
@@ -427,7 +427,7 @@ int main()
 
 		//Draw meshes
 		//mainWindow.draw();
-		mainWindow.drawPhysics();
+		mainWindow.draw();
 
 		mainWindow.swapBuffers();
 	}

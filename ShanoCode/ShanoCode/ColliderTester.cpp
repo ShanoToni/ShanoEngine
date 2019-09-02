@@ -1,158 +1,64 @@
 #include "ColliderTester.h"
 
 
-
-ColliderTester::ColliderTester()
-{
-}
-
-IntersectData ColliderTester::intersect(OBB A, OBB B)
-{
-	IntersectData result = IntersectData();
-	
-	//orinetation of both obbs
-	const float * o1 = value_ptr(A.getOrientation());
-	const float * o2 = value_ptr(B.getOrientation());
-
-	//testing axis each variation of cobination of orientations
-	glm::vec3 test[15] = {
-		glm::vec3(o1[0], o1[1], o1[2]),
-		glm::vec3(o1[3], o1[4], o1[5]),
-		glm::vec3(o1[6], o1[7], o1[8]),
-		glm::vec3(o2[0], o2[1], o2[2]),
-		glm::vec3(o2[3], o2[4], o2[5]),
-		glm::vec3(o2[6], o2[7], o2[8])
-	};
-	//fill out the rest
-	for (int i = 0; i < 3; ++i) { // Fill out rest of axis
-		test[6 + i * 3 + 0] = glm::cross(test[i], test[0]);
-		test[6 + i * 3 + 1] = glm::cross(test[i], test[1]);
-		test[6 + i * 3 + 2] = glm::cross(test[i], test[2]);
-	}
-	
-	glm::vec3 * hitNormal = 0;
-	bool shouldFlip;
-
-	for (int i = 0; i < 15; ++i)
-	{
-		if (glm::length2(test[i]) < 0.001f) 
-		{
-			continue;
-		}
-		
-		float depth = penetrationDepth(A, B, test[i], &shouldFlip);
-
-		if (depth <= 0.0f) 
-		{
-			result = IntersectData();
-			return result;
-		}
-
-		else if (depth <= result.getDepth())
-		{
-			if (shouldFlip)
-			{
-				test[i] = test[i] * -1.0f;
-			}
-			result.setDepth(depth);
-			hitNormal = &test[i];
-		}
-	}
-
-	if (hitNormal == 0)
-	{
-		result = IntersectData();
-		return result;
-	}
-
-	glm::vec3 axis = glm::normalize(*hitNormal);
-	std::vector<glm::vec3> c1 = clipEdgesToOBB(getEdges(B), A);
-	std::vector<glm::vec3> c2 = clipEdgesToOBB(getEdges(A), B);
-	std::vector<glm::vec3> resultContacts;
-	resultContacts.insert(resultContacts.end(), c1.begin(), c1.end());
-	resultContacts.insert(resultContacts.end(), c2.begin(), c2.end());
-
-	Interval i = getInterval(A, axis);
-	float distance = (i.max - i.min)*0.5f - result.getDepth() * 0.5f;
-	glm::vec3 pointOnPlane = A.getPosition() + (axis * distance);
-
-	for (int i = resultContacts.size() - 1; i >= 0; --i)
-	{
-		glm::vec3 contact = resultContacts[i];
-
-		resultContacts[i] = contact + (axis + glm::dot(axis, pointOnPlane - contact));
-	}
-
-	for (int i = resultContacts.size() - 1; i >= 0; --i) 
-	{
-		glm::vec3 contact = resultContacts[i];
-		resultContacts[i] = contact + (axis * glm::dot(axis, pointOnPlane - contact));
-
-		for (int j = resultContacts.size() - 1; j > i; --j)
-		{
-			if (glm::length(resultContacts[j] - resultContacts[i]) < 0.001f)
-			{
-				resultContacts.erase(resultContacts.begin() + j);
-				break;
-			}
-		}
-	}
-
-	result.setHasIntersection(true);
-	result.insertContact(resultContacts);
-	result.setNormal(axis);
-
-	return result;
-}
-
-glm::vec3 ColliderTester::closestPoint(OBB obb, const glm::vec3 & point)
+glm::vec3 ColliderTester::closestPoint(OBB obb, const glm::vec3& point)
 {
 	glm::vec3 result = obb.getPosition();
 	glm::vec3 dir = point - obb.getPosition();
 
 	for (int i = 0; i < 3; i++)
 	{
-		const float * orientation = &(glm::value_ptr(obb.getOrientation()))[i * 3];
+		const float* orientation = &(glm::value_ptr(obb.getOrientation()))[i * 3];
 		glm::vec3 axis(orientation[0], orientation[1], orientation[2]);
 		float distance = glm::dot(dir, axis);
 		if (distance > obb.getSize()[i])
 			distance = obb.getSize()[i];
+
 		if (distance < -obb.getSize()[i])
 			distance = -obb.getSize()[i];
 
-		result = result + (axis*distance);
+		result = result + (axis * distance);
 	}
-
 	return result;
 }
 
+
 bool ColliderTester::PointInOBB(glm::vec3 point, OBB obb)
 {
+
+	int testX = point.x*1000;
+	int testY = point.y*1000; 
+	int testZ = point.z*1000;
+
+	glm::vec3 p = glm::vec3(testX / 1000.0f, testY / 1000.0f, testZ / 1000.0f);
+
 	glm::vec3 dir = point - obb.getPosition();
-	for (int i = 0; i < 3; i++)
-	{
-		const float * orientation = &(glm::value_ptr(obb.getOrientation()))[i * 3];
+	for (int i = 0; i < 3; ++i) {
+		const float* orientation = &(value_ptr(obb.getOrientation()))[i * 3];
 		glm::vec3 axis(orientation[0], orientation[1], orientation[2]);
 
 		float distance = glm::dot(dir, axis);
 
-		if (distance > obb.getSize()[i])
+		if (distance > obb.getSize()[i]) {
 			return false;
-		if (distance < -obb.getSize()[i])
+		}
+		if (distance < -obb.getSize()[i]) {
 			return false;
-
-		return true;
+		}
 	}
+	return true;
+
 }
 
-Interval ColliderTester::getInterval(OBB obb, glm::vec3 axis)
+
+Interval ColliderTester::getInterval(OBB obb, const glm::vec3 axis)
 {
 	glm::vec3 vertex[8];
-	//find the center extents and axis of the obb
+	// find the center, extents, and axis of the OBB
 	glm::vec3 C = obb.getPosition();
 	glm::vec3 E = obb.getSize();
 	const float* o = glm::value_ptr(obb.getOrientation());
-	//obb axis
+	// OBB Axis
 	glm::vec3 A[] =
 	{
 		glm::vec3(o[0], o[1], o[2]),
@@ -169,7 +75,6 @@ Interval ColliderTester::getInterval(OBB obb, glm::vec3 axis)
 	vertex[5] = C + A[0] * E[0] - A[1] * E[1] - A[2] * E[2];
 	vertex[6] = C - A[0] * E[0] + A[1] * E[1] - A[2] * E[2];
 	vertex[7] = C - A[0] * E[0] - A[1] * E[1] + A[2] * E[2];
-
 
 	// project each vertex onto the provided axes and
 	// store the min and max projection in an interval structure
@@ -210,14 +115,10 @@ std::vector<glm::vec3> ColliderTester::getVertices(OBB obb)
 	v[7] = C - A[0] * E[0] - A[1] * E[1] + A[2] * E[2];
 
 	return v;
+
 }
 
-
-ColliderTester::~ColliderTester()
-{
-}
-
-std::vector<Line> ColliderTester::getEdges(OBB obb)
+std::vector<Line> ColliderTester::getEdges(OBB  obb)
 {
 	std::vector<Line> result;
 	result.reserve(12);
@@ -237,9 +138,10 @@ std::vector<Line> ColliderTester::getEdges(OBB obb)
 	}
 
 	return result;
+
 }
 
-std::vector<Plane> ColliderTester::getPlanes(OBB obb)
+std::vector<Plane> ColliderTester::getPlanes(OBB  obb)
 {
 	glm::vec3 c = obb.getPosition(); // OBB Center
 	glm::vec3 e = obb.getSize(); // OBB Extents
@@ -262,9 +164,11 @@ std::vector<Plane> ColliderTester::getPlanes(OBB obb)
 	result[5] = Plane(a[2] * -1.0f, -glm::dot(a[2], (c - a[2] * e.z)));
 
 	return result;
+	//Macro CMP and rest of the intersection data methods needed for implementation of the Responce 
+	//PS prayer to god everything works out ok
 }
 
-bool ColliderTester::clipToPlane(Plane plane, const Line & line, glm::vec3 * outPoint)
+bool ColliderTester::clipToPlane(Plane  plane, const Line & line, glm::vec3 * outPoint)
 {
 	//Find if it intersects with the plane
 	auto normal = glm::normalize(plane.getNormal());
@@ -287,6 +191,7 @@ bool ColliderTester::clipToPlane(Plane plane, const Line & line, glm::vec3 * out
 		return true;
 	}
 	return	false;
+
 }
 
 std::vector<glm::vec3> ColliderTester::clipEdgesToOBB(const std::vector<Line>& edges, OBB obb)
@@ -312,15 +217,17 @@ std::vector<glm::vec3> ColliderTester::clipEdgesToOBB(const std::vector<Line>& e
 	}
 
 
+
 	return result;
 }
 
-float ColliderTester::penetrationDepth(OBB o1, OBB o2, const glm::vec3 & axis, bool * outShouldFlip)
+float ColliderTester::penetrationDepth(OBB o1, OBB  o2, const glm::vec3 & axis, bool * outShouldFlip)
 {
 	Interval i1 = ColliderTester::getInterval(o1, glm::normalize(axis));
 	Interval i2 = ColliderTester::getInterval(o2, glm::normalize(axis));
 
-	if (!((i2.min <= i1.max) && (i1.min <= i2.max))) {
+	if (!((i2.min <= i1.max) && (i1.min <= i2.max))) 
+	{
 		return 0.0f; // No penerattion
 	}
 
@@ -335,74 +242,138 @@ float ColliderTester::penetrationDepth(OBB o1, OBB o2, const glm::vec3 & axis, b
 
 
 	//flips collision normal if needed
-	if (outShouldFlip != 0) {
+	if (outShouldFlip != 0)
+	{
 		*outShouldFlip = (i2.min < i1.min);
 	}
 
 	return (len1 + len2) - length;
 
+
 }
 
-const glm::vec3 & SAT::getMin(OBB obb)
+
+IntersectData ColliderTester::intersect(OBB obb, Plane plane)
 {
-	glm::vec3 p1 = obb.getPosition();
-	glm::vec3 p2 = obb.getPosition() + obb.getSize();
-
-	return glm::vec3(fminf(p1.x, p2.x), fminf(p1.y, p2.y), fminf(p1.z, p2.z));
-}
-
-const glm::vec3 & SAT::getMax(OBB obb)
-{
-	glm::vec3 p1 = obb.getPosition();
-	glm::vec3 p2 = obb.getPosition() + obb.getSize();
-
-	return glm::vec3(fmaxf(p1.x, p2.x), fmaxf(p1.y, p2.y), fmaxf(p1.z, p2.z));
-}
-
-Interval SAT::getInterval(OBB obb, const glm::vec3 axis)
-{
-	glm::vec3 vertex[8];
-	//find the center extents and axis of the obb
-	glm::vec3 C = obb.getPosition();
-	glm::vec3 E = obb.getSize();
+	// Local variables for readability only
 	const float* o = glm::value_ptr(obb.getOrientation());
-	//obb axis
-	glm::vec3 A[] =
+	// rotation / orientation
+	glm::vec3 rot[] =
 	{
 		glm::vec3(o[0], o[1], o[2]),
 		glm::vec3(o[3], o[4], o[5]),
 		glm::vec3(o[6], o[7], o[8])
 	};
 
-	// use the center, extents, and local axis to find the actual vertices
-	vertex[0] = C + A[0] * E[0] + A[1] * E[1] + A[2] * E[2];
-	vertex[1] = C - A[0] * E[0] + A[1] * E[1] + A[2] * E[2];
-	vertex[2] = C + A[0] * E[0] - A[1] * E[1] + A[2] * E[2];
-	vertex[3] = C + A[0] * E[0] + A[1] * E[1] - A[2] * E[2];
-	vertex[4] = C - A[0] * E[0] - A[1] * E[1] - A[2] * E[2];
-	vertex[5] = C + A[0] * E[0] - A[1] * E[1] - A[2] * E[2];
-	vertex[6] = C - A[0] * E[0] + A[1] * E[1] - A[2] * E[2];
-	vertex[7] = C - A[0] * E[0] - A[1] * E[1] + A[2] * E[2];
+	glm::vec3 normal = glm::normalize(plane.getNormal());
+	float pLen = obb.getSize().x * fabsf(glm::dot(normal, rot[0])) + obb.getSize().y * fabsf(glm::dot(normal, rot[1])) + obb.getSize().z * fabsf(glm::dot(normal, rot[2]));
 
+	float dot = glm::dot(normal, obb.getPosition());
+	float dist = dot - plane.getDistance();
 
-	// project each vertex onto the provided axes and
-	// store the min and max projection in an interval structure
-	Interval result;
-	result.min = result.max = glm::dot(axis, vertex[0]);
-	for (int i = 1; i < 8; i++)
+	glm::vec3 intersection;
+	std::vector<Line> edges;
+	edges = getEdges(obb);
+	std::vector<glm::vec3> resultVecs;
+	int count;
+	glm::vec3 result;
+	Plane p = Plane();
+
+	for (int j = 0; j < edges.size(); ++j)
 	{
-		float projection = glm::dot(axis, vertex[i]);
-		result.min = (projection < result.min) ? projection : result.min;
-		result.max = (projection > result.max) ? projection : result.max;
+		if (clipToPlane(p, edges[j], &intersection))
+		{
+			resultVecs.push_back(intersection);
+		}
 	}
 
-	return result;
+
+
+	return IntersectData(fabsf(dist) <= pLen, plane.getNormal(), pLen - dist, resultVecs);
 }
 
-bool SAT::overlapOnAxis(OBB obb1, OBB obb2, const glm::vec3 axis)
-{
-	Interval a = getInterval(obb1, axis);
-	Interval b = getInterval(obb2, axis);
 
-	return (b.min <= a.max) && (a.min <= b.max);
+IntersectData ColliderTester::FindCollisionFeatures(OBB A, OBB B) {
+
+	IntersectData result = IntersectData();
+
+	const float* o1 = value_ptr(A.getOrientation());
+	const float* o2 = value_ptr(B.getOrientation());
+
+	glm::vec3 test[15] = { // Face axis
+		glm::vec3(o1[0], o1[1], o1[2]),
+		glm::vec3(o1[3], o1[4], o1[5]),
+		glm::vec3(o1[6], o1[7], o1[8]),
+		glm::vec3(o2[0], o2[1], o2[2]),
+		glm::vec3(o2[3], o2[4], o2[5]),
+		glm::vec3(o2[6], o2[7], o2[8])
+	};
+	for (int i = 0; i < 3; ++i) { // Fill out rest of axis
+		test[6 + i * 3 + 0] = glm::cross(test[i], test[0]);
+		test[6 + i * 3 + 1] = glm::cross(test[i], test[1]);
+		test[6 + i * 3 + 2] = glm::cross(test[i], test[2]);
+	}
+
+	glm::vec3* hitNormal = 0;
+	bool shouldFlip;
+
+	for (int i = 0; i < 15; ++i) {
+		if (glm::length2(test[i]) < 0.001f) {
+			continue;
+		}
+
+		float depth = penetrationDepth(A, B, test[i], &shouldFlip);
+
+		if (depth <= 0.0f) {
+			result = IntersectData();
+			return result;
+		}
+		else if (depth < result.getDepth()) {
+			if (shouldFlip) {
+				test[i] = test[i] * -1.0f;
+			}
+			result.setDepth(depth);
+			hitNormal = &test[i];
+		}
+	}
+
+	if (hitNormal == 0) {
+		result = IntersectData();
+		return result;
+	}
+	glm::vec3 axis = glm::normalize(*hitNormal);
+	std::vector<glm::vec3> c1 = clipEdgesToOBB(getEdges(B), A);
+	std::vector<glm::vec3> c2 = clipEdgesToOBB(getEdges(A), B);
+	std::vector<glm::vec3> resultContacts;
+	resultContacts.insert(resultContacts.end(), c1.begin(), c1.end());
+	resultContacts.insert(resultContacts.end(), c2.begin(), c2.end());
+
+
+	Interval i = getInterval(A, axis);
+	float distance = (i.max - i.min)* 0.5f - result.getDepth() * 0.5f;
+	glm::vec3 pointOnPlane = A.getPosition() + (axis * distance);
+	for (int i = resultContacts.size() - 1; i >= 0; --i) {
+		glm::vec3 contact = resultContacts[i];
+
+		resultContacts[i] = contact + (axis * glm::dot(axis, pointOnPlane - contact));
+	}
+
+	for (int i = resultContacts.size() - 1; i >= 0; --i) {
+		glm::vec3 contact = resultContacts[i];
+		resultContacts[i] = contact + (axis *glm::dot(axis, pointOnPlane - contact));
+		for (int j = resultContacts.size() - 1; j > i; --j) {
+			if (glm::length2(resultContacts[j] - resultContacts[i]) < 0.001f) {
+				resultContacts.erase(resultContacts.begin() + j);
+				break;
+			}
+		}
+
+	}
+
+	result.setHasIntersection(true);
+	result.insertContact(resultContacts);
+	result.setNormal(axis);
+
+	return result;
+
 }

@@ -4,6 +4,8 @@
 
 Body::Body()
 {
+	moving = false;
+	staticBody = false;
 }
 
 OBB Body::getOrientedBoxCollider()
@@ -40,9 +42,56 @@ void Body::updateInvInertia()
 	invInertia = inverse(inertia);
 }
 
+void Body::setDynamic()
+{
+	if (!staticBody)
+	{
+		moving = true;
+	}
+}
+
+void Body::updateState()
+{
+	if (isAlwaysStatic())
+	{
+		return;
+	}
+
+	float motion = glm::length(getVel()) + glm::length(getAngVel());
+	
+	motions.insert(motions.begin(), motion);
+
+	if (motions.size() > counter)
+	{
+		motions.erase(motions.end()-1);
+	}
+
+	float motionSum = 0.0f;
+
+	for (int i = 0; i < motions.size(); i++)
+	{
+		motionSum = motionSum + (motions[i] / pow(2, i+1));
+	}
+
+	if (motionSum < 0.1f)
+	{
+		this->setStatic();
+	}
+}
+
+void Body::becomeStatic()
+{
+	if (!moving)
+	{
+		setAcc(glm::vec3(0.0));
+		setVel(glm::vec3(0.0));
+		setAngVel(glm::vec3(0.0));
+	}
+}
+
 IntersectData Body::canCollide(Body * other)
 {
-		return collider.intersect(getOrientedBoxCollider(), other->getOrientedBoxCollider());	
+		return collider.FindCollisionFeatures(getOrientedBoxCollider(), other->getOrientedBoxCollider());
 }
 
 Body::~Body()

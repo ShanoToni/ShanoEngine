@@ -75,7 +75,7 @@ float shadowCalc(vec3 pos, int i)
 	closestDepth *= far_plane;
 
 	float currentDepth = length(fragToLight);
-	float bias = 1.1;
+	float bias = 0.01;
 	float shadows = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
 	return shadows;
@@ -91,7 +91,7 @@ float CalcDirectionalShadowFactor(DirectionalLight light)
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
-	float bias = 0.005;
+	float bias = 0.001;
     float shadows = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
 	if(projCoords.z > 1.0)
 			shadows = 0.0;
