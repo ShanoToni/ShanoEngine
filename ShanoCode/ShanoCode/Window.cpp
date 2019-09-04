@@ -89,7 +89,7 @@ int Window::Initialise()
 	glfwSetWindowUserPointer(mainWindow, this);
 
 	// Initialize cammera
-	camera = Camera(vec3(0.0f, 5.0f, 10.0f), vec3(0.0f, 1.0f, 0.0f), 90.0f, 0.0f, 300.0f, 0.3f);
+	camera = Camera(vec3(0.0f, 5.0f, 10.0f), vec3(0.0f, 1.0f, 0.0f), 90.0f, 0.0f, 30.0f, 0.3f);
 	flashTime = 0.5f;
 	toggleTime = 0.5f;
 

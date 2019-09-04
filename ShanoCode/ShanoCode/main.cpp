@@ -381,7 +381,7 @@ int main()
 	
 
 	// new time	
-	const float dt = 0.0009f;
+	const float dt = 0.009f;
 	float accumulator = 0.0f;
 	GLfloat currentTime = (GLfloat)glfwGetTime();
 
@@ -394,7 +394,7 @@ int main()
 		GLfloat frameTime = newTime - currentTime;
 
 		//*******************************************************************************************************************
-		frameTime *= 0.60;
+		frameTime *= 0.50;
 		currentTime = newTime;
 		accumulator += frameTime;
 
@@ -403,8 +403,8 @@ int main()
 	
 		while (accumulator >= dt)
 		{
-			phys.useForces();
 			phys.collide();
+			phys.useForces();
 			phys.update(dt);
 			
 			

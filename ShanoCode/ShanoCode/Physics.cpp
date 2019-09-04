@@ -53,8 +53,8 @@ void Physics::init()
 	body->getMesh()->setTexture("Textures/solid.jpg");
 	body->getMesh()->loadTexture();
 
-	body->setPos(glm::vec3(-5.0f, 6.0f, 0.0f));
-	body->setVel(glm::vec3(15.0f, 0.0f, 0.0f));
+	body->setPos(glm::vec3(5.0f, 10.0f, 0.0f));
+	body->setVel(glm::vec3(0.0f, 0.0f, 0.0f));
 	body->setAngVel(glm::vec3(0.0f, 0.0f, 0.0f));
 
 	body->scale(glm::vec3(0.5));
@@ -71,8 +71,8 @@ void Physics::init()
 	body->getMesh()->setTexture("Textures/solid.jpg");
 	body->getMesh()->loadTexture();
 
-	body->setPos(glm::vec3(5.0f, 5.0f, 0.0f));
-	body->setVel(glm::vec3(0.0f, -1.0f, 0.0f));
+	body->setPos(glm::vec3(5.0f, 15.0f, 0.0f));
+	body->setVel(glm::vec3(0.0f, 0.0f, 0.0f));
 	body->setAngVel(glm::vec3(0.0f, 0.0f, 0.0f));
 
 	body->scale(glm::vec3(0.5, 2.5, 2.0));
@@ -89,8 +89,8 @@ void Physics::init()
 	body->getMesh()->setTexture("Textures/solid.jpg");
 	body->getMesh()->loadTexture();
 
-	body->setPos(glm::vec3(7.0f, 5.0f, 0.0f));
-	body->setVel(glm::vec3(0.0f, -1.0f, 0.0f));
+	body->setPos(glm::vec3(5.0f, 25.0f, 0.0f));
+	body->setVel(glm::vec3(0.0f, 0.0f, 0.0f));
 	body->setAngVel(glm::vec3(0.0f, 0.0f, 0.0f));
 
 	body->scale(glm::vec3(0.5, 2.5, 2.0));
@@ -107,8 +107,8 @@ void Physics::init()
 	body->getMesh()->setTexture("Textures/solid.jpg");
 	body->getMesh()->loadTexture();
 
-	body->setPos(glm::vec3(9.0f, 5.0f, 0.0f));
-	body->setVel(glm::vec3(0.0f, -1.0f, 0.0f));
+	body->setPos(glm::vec3(5.0f, 35.0f, 0.0f));
+	body->setVel(glm::vec3(0.0f, 0.0f, 0.0f));
 	body->setAngVel(glm::vec3(0.0f, 0.0f, 0.0f));
 
 	body->scale(glm::vec3(0.5, 2.5, 2.0));
@@ -125,8 +125,8 @@ void Physics::init()
 	body->getMesh()->setTexture("Textures/solid.jpg");
 	body->getMesh()->loadTexture();
 
-	body->setPos(glm::vec3(-5.0f, 35.0f, 0.0f));
-	body->setVel(glm::vec3(0.0f, -1.0f, 0.0f));
+	body->setPos(glm::vec3(5.0f, 45.0f, 0.0f));
+	body->setVel(glm::vec3(0.0f, 0.0f, 0.0f));
 	body->setAngVel(glm::vec3(0.0f, 0.0f, 0.0f));
 
 	body->scale(glm::vec3(1.5, 1.5, 1.5));
@@ -164,7 +164,7 @@ void Physics::update(float dt)
 
 	for (int i = 0; i < bodyList.size(); i++)
 	{
-		
+		bodyList[i]->becomeStatic();
 		//integration position
 		bodyList[i]->getVel() = bodyList[i]->getVel() + dt * bodyList[i]->getAcc();
 		bodyList[i]->setPos(bodyList[i]->getPos() + dt * (bodyList[i]->getVel()));
@@ -250,23 +250,20 @@ void Physics::collide()
 	{
 		auto& b1 = bodyList[i];
 		
-	
+		
 		for (int j = i + 1; j < bodyList.size(); j++)
 		{
 			auto& b2 = bodyList[j];
-			if(b1->getState() || b2->getState())
+
+			auto collisionData = b1->canCollide(b2);
+			
+			if (collisionData.getHasIntersection())
 			{
-				auto collisionData = b1->canCollide(b2);
-				if (collisionData.getHasIntersection())
+				bodyList[i]->updateState();
+				bodyList[j]->updateState();
+				if (bodyList[i]->getState() || bodyList[j]->getState())
 				{
-					bodyList[i]->updateState();
-					bodyList[i]->becomeStatic();
-					bodyList[j]->updateState();
-					bodyList[j]->becomeStatic();
-					if (bodyList[i]->getState() || bodyList[j]->getState())
-					{
-						resolveColision(collisionData, b1, b2);
-					}
+					resolveColision(collisionData, b1, b2);
 				}
 			}
 		}
@@ -420,7 +417,7 @@ void Physics::resolveColision(IntersectData data, Body * b, Body * b2)
 	}
 	else 
 	{
-		auto halfDepth = data.getDepth() / 4.0f;
+		auto halfDepth = data.getDepth() / 2.0f;
 		b2->setPos(b2->getPos() + halfDepth * normal);
 		b->setPos(b->getPos() - halfDepth * normal);
 	}

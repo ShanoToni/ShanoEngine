@@ -73,7 +73,8 @@ void Body::updateState()
 		motionSum = motionSum + (motions[i] / pow(2, i+1));
 	}
 
-	if (motionSum < 0.1f)
+
+	if (motionSum < 0.3f)
 	{
 		this->setStatic();
 	}
