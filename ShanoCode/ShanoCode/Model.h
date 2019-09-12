@@ -32,7 +32,7 @@ public:
 	void addShader(Shader shader);
 	void loadTexture();
 	
-private:
+protected:
 
 	void loadNode(aiNode *node, const aiScene *scene);
 	void loadMesh(aiMesh *mesh, const aiScene *scene);

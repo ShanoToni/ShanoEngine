@@ -70,7 +70,13 @@ public:
 
 	//collision detection
 	IntersectData canCollide(Body * other);
+	
+	//can jump
+	void canJump(bool j) { jump = j; }
+	bool getJump() { return jump; }
 
+	void setOffset(glm::vec3 off) { offset = off; }
+	glm::vec3 getOffset() { return offset; }
 	~Body();
 
 
@@ -94,5 +100,9 @@ private:
 	bool staticBody;
 	const int counter = 10;
 	std::vector<float> motions;
+
+	glm::vec3 offset;
+
+	bool jump;
 };
 

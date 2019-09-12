@@ -103,8 +103,6 @@ static const char* paFShader = "Shaders/particle.frag";
 
 void CreateObjects()
 {
-	
-
 	//PLANE
 	float size = 20.0f;
 	Texture * t = new Texture("Textures/wood.jpg");
@@ -381,7 +379,7 @@ int main()
 	
 
 	// new time	
-	const float dt = 0.009f;
+	const float dt = 0.007f;
 	float accumulator = 0.0f;
 	GLfloat currentTime = (GLfloat)glfwGetTime();
 
@@ -394,7 +392,7 @@ int main()
 		GLfloat frameTime = newTime - currentTime;
 
 		//*******************************************************************************************************************
-		frameTime *= 0.50;
+		frameTime *= 1.0;
 		currentTime = newTime;
 		accumulator += frameTime;
 
@@ -420,7 +418,9 @@ int main()
 
 		mainWindow.camera.keyControl(mainWindow.getKeys(), dt);
 		mainWindow.camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
-	
+		mainWindow.camera.updateLookPos(phys.getActorPos());
+		phys.controlActor(mainWindow.getKeys(), mainWindow.camera.getFreeCam(), mainWindow.camera.getActorCamPos(),dt);
+		phys.resetJumps();
 
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

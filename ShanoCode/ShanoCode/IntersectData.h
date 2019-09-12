@@ -39,6 +39,7 @@ public:
 	inline void setDepth(float d) { depth = d; }
 	inline std::vector<glm::vec3> getContacts() { return contacts; }
 	inline void insertContact(std::vector<glm::vec3> c) { contacts = c; }
+	inline void addContact(glm::vec3 c) { contacts.push_back(c); }
 	inline void setNormal(glm::vec3 n) { normal = n; }
 	inline glm::vec3 getNormal() { return normal; }
 

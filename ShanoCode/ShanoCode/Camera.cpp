@@ -5,6 +5,8 @@ Camera::Camera()
 {
 	position = glm::vec3(0.0f);
 	up = glm::vec3(0.0f, 1.0f, 0.0f);
+	freeCam = true;
+	timer = 0.8f;
 }
 
 Camera::Camera(glm::vec3 startPosition,
@@ -26,6 +28,9 @@ Camera::Camera(glm::vec3 startPosition,
 	turnSpeed = startTurnSpeed;
 	
 	Update();
+
+	freeCam = true;
+	timer = 0.8f;
 }
 
 void Camera::keyControl(bool * keys, GLfloat dt)
@@ -54,6 +59,13 @@ void Camera::keyControl(bool * keys, GLfloat dt)
 	if (keys[GLFW_KEY_C])
 	{
 		position -= up * vel;
+	}
+
+	timer -= dt;
+	if (keys[GLFW_KEY_TAB] && timer< 0.0f)
+	{
+		timer = 0.8f;
+		freeCam = !freeCam;
 	}
 }
 
@@ -94,7 +106,10 @@ glm::vec3 Camera::getCameraDir()
 glm::mat4 Camera::calculateViewMatrix()
 {
 	//calculate the view matrix with lookat 
-	return glm::lookAt(position, position + front, worldUp);
+	if(freeCam)
+		return glm::lookAt(position, position + front, worldUp);
+	if(!freeCam)
+		return glm::lookAt(glm::vec3(lookPos.x + front.x * 20, lookPos.y + front.y * 20, lookPos.z + front.z* 20), lookPos, worldUp);
 }
 
 Camera::~Camera()

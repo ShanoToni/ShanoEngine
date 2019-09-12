@@ -25,6 +25,10 @@ public:
 
 	glm::mat4 calculateViewMatrix();
 
+	void updateLookPos(glm::vec3 pos) { lookPos = pos; }
+	bool getFreeCam() { return freeCam; }
+	glm::vec3 getActorCamPos() { return glm::vec3(lookPos.x + front.x * 20, lookPos.y + front.y * 20, lookPos.z + front.z * 20); }
+
 	~Camera();
 
 private:
@@ -41,6 +45,10 @@ private:
 
 	GLfloat movementSpeed;
 	GLfloat turnSpeed;
+
+	float timer;
+	bool freeCam;
+	glm::vec3 lookPos;
 
 	void Update();
 };

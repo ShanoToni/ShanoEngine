@@ -62,7 +62,7 @@ public:
 	Mesh();
 	void breakDown(glm::vec3 t1, glm::vec3 t2, glm::vec3 t3, int count,int limit, std::vector<glm::vec3>& result);
 	Mesh(MeshType type);
-	Mesh(std::vector<Vertex> & vertices, std::vector<glm::vec3>& normals, std::vector<glm::vec2>& texCoords, std::vector<GLuint>& indices);
+	Mesh(std::vector<Vertex> & vertices, std::vector<glm::vec3>& normals, std::vector<glm::vec2>& texCoords, std::vector<GLuint>& indices, glm::vec3 pos);
 
 	void CreateMesh(std::vector<Vertex>& vertices, std::vector<glm::vec3>& normals, std::vector<glm::vec2>& texCoords, std::vector<GLuint>& indices);
 	void RenderMesh();
@@ -147,6 +147,9 @@ public:
 	void rotate(const float &angle, const glm::vec3 &vect);
 	// scale mesh by a vector
 	void scale(const glm::vec3 &vect);
+	glm::vec3 getMeshScale() { return meshScale; }
+	glm::vec3 getMeshPos() { return meshPos; }
+	void setMeshPos(glm::vec3 pos) { meshPos = pos; }
 
 private:
 	//VAO-holds the information VBO-specific vertex IBO- idex of buffers
@@ -163,10 +166,13 @@ private:
 	unsigned int numVertices;
 
 	void createNormals(std::vector<glm::vec3> & normals, std::vector<Vertex> & vertices, int numVerts);
+	void createMeshScale();
 
 	glm::mat4 m_translate; // translation matrix
 	glm::mat4 m_rotate; // rotation matrix
 	glm::mat4 m_scale; // scale matrix
+	glm::vec3 meshScale;
+	glm::vec3 meshPos;
 
 	std::vector<Vertex> m_vertices; // mesh vertices (without duplication)
 	Shader m_shader; // shader

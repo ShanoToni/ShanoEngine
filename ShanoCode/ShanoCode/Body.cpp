@@ -6,11 +6,12 @@ Body::Body()
 {
 	moving = false;
 	staticBody = false;
+	jump = false;
 }
 
 OBB Body::getOrientedBoxCollider()
 {
-	auto halfEdgeLen = getScaleVec();
+	auto halfEdgeLen = getScaleVec() * mesh->getMeshScale() / 2.0f;
 	return OBB(getPos(), glm::mat3(getRotate()), halfEdgeLen);
 }
 
@@ -30,9 +31,9 @@ void Body::rotate(float angle, const glm::vec3 & vect)
 
 void Body::updateInvInertia()
 {
-	float w = getMesh()->getScale()[0][0] * 2.0f;
-	float d = getMesh()->getScale()[2][2] * 2.0f;
-	float h = getMesh()->getScale()[1][1] * 2.0f;
+	float w = getMesh()->getScale()[0][0] * mesh->getMeshScale().x;
+	float d = getMesh()->getScale()[2][2] * mesh->getMeshScale().z;
+	float h = getMesh()->getScale()[1][1] * mesh->getMeshScale().y;
 
 	glm::mat3 inertia = glm::mat3(0.0f);
 	inertia[0][0] = getMass() / 12.0f * (h * h + d * d);
@@ -74,7 +75,7 @@ void Body::updateState()
 	}
 
 
-	if (motionSum < 0.3f)
+	if (motionSum < 0.5f)
 	{
 		this->setStatic();
 	}

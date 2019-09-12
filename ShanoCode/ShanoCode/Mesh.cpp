@@ -78,13 +78,20 @@ void Mesh::breakDown(
 
 }
 
-Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<glm::vec3>& normals, std::vector<glm::vec2> &texCoords, std::vector<GLuint>& indices)
+Mesh::Mesh(std::vector<Vertex>& vertices, std::vector<glm::vec3>& normals, std::vector<glm::vec2>& texCoords, std::vector<GLuint>& indices, glm::vec3 pos)
 {
+	std::vector<Vertex> transVerts;
+	for (int i = 0; i < vertices.size(); i++)
+	{
+		transVerts.push_back(Vertex(glm::vec3( vertices[i].getCoord() - pos)));
+	}
 	numIndices = indices.size();
 	numVertices = vertices.size();
 	tex = Texture();
 	hasTex = false;
-	CreateMesh(vertices, normals, texCoords, indices);
+	m_vertices = std::vector<Vertex>(std::begin(vertices), std::end(vertices));
+	createMeshScale();
+	CreateMesh(transVerts, normals, texCoords, indices);
 	initTransform();
 }
 
@@ -524,7 +531,7 @@ Mesh::Mesh(MeshType type)
 	//create mesh
 	
 	CreateMesh(vertices, normals, texCoords, indices);
-
+	createMeshScale();
 	// create model matrix (identity)
 	initTransform();
 }
@@ -672,4 +679,63 @@ void Mesh::createNormals(std::vector<glm::vec3> & normals, std::vector<Vertex> &
 		
 		i = i + 2;
 	}
+}
+
+void Mesh::createMeshScale()
+{
+	float minX, minY, minZ;
+	float maxX, maxY, maxZ;
+
+	for (int i = 0; i < m_vertices.size(); i++)
+	{
+		if (i == 0)
+		{
+			//initialize X
+			minX = m_vertices[i].getCoord().x;
+			maxX = m_vertices[i].getCoord().x;
+
+			//initialize y
+			minY = m_vertices[i].getCoord().y;
+			maxY = m_vertices[i].getCoord().y;
+
+			//initialize z
+			minZ = m_vertices[i].getCoord().z;
+			maxZ = m_vertices[i].getCoord().z;
+		}
+
+		//create min and max X
+		if (m_vertices[i].getCoord().x < minX)
+		{
+			minX = m_vertices[i].getCoord().x;
+		}
+
+		if (m_vertices[i].getCoord().x > maxX)
+		{
+			maxX = m_vertices[i].getCoord().x;
+		}
+
+		//create min and max Y
+		if (m_vertices[i].getCoord().y < minY)
+		{
+			minY = m_vertices[i].getCoord().y;
+		}
+
+		if (m_vertices[i].getCoord().y > maxY)
+		{
+			maxY = m_vertices[i].getCoord().y;
+		}
+
+		//create min and max Z
+		if (m_vertices[i].getCoord().z < minZ)
+		{
+			minZ = m_vertices[i].getCoord().z;
+		}
+
+		if (m_vertices[i].getCoord().z > maxZ)
+		{
+			maxZ = m_vertices[i].getCoord().z;
+		}
+	}
+
+	meshScale = glm::vec3(maxX - minX, maxY - minY, maxZ - minZ);
 }

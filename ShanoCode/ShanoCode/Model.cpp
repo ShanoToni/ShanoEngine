@@ -113,6 +113,13 @@ void Model::loadMesh(aiMesh * mesh, const aiScene * scene)
 	std::vector<glm::vec3> normals;
 	std::vector<glm::vec2> texCoords;
 	
+	glm::vec3 meshPos = glm::vec3(0.0f);
+	for (int i =0; i< mesh->mNumVertices; i++)
+	{
+		meshPos += glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
+	}
+	meshPos = meshPos /(1.0f *  mesh->mNumVertices);
+
 	for (int i = 0; i < mesh->mNumVertices; i++)
 	{
 		vertices.push_back( Vertex(glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z)));
@@ -134,7 +141,7 @@ void Model::loadMesh(aiMesh * mesh, const aiScene * scene)
 		}
 	}
 
-	Mesh * newMesh = new Mesh(vertices, normals, texCoords, indices);
+	Mesh * newMesh = new Mesh(vertices, normals, texCoords, indices, meshPos);
 	newMesh->setMatIdx(mesh->mMaterialIndex);
 	newMesh->setTexture("Textures/plane.jpg");
 	newMesh->loadTexture();
